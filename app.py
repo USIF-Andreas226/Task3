@@ -17,14 +17,22 @@ sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap');
-    * { font-family: 'Cairo', sans-serif; }
-    .stApp { background-color: #F0F4F8; }
+    :root {
+        --kf-primary: #0B5FFF; /* bright blue */
+        --kf-accent: #1E3A5F;  /* deep navy */
+        --kf-bg: #F8FAFF;      /* page background */
+        --kf-panel: #FFFFFF;   /* card background */
+        --kf-text: #0F172A;    /* primary text */
+        --kf-muted: #6B7A8F;   /* secondary text */
+    }
+    * { font-family: 'Cairo', sans-serif; color: var(--kf-text); }
+    body, .stApp { background-color: var(--kf-bg) !important; }
     .main-header {
-        text-align: center; padding: 2rem 0 1rem; color: #1E3A5F;
+        text-align: center; padding: 2rem 0 1rem; color: var(--kf-accent);
         font-size: 2rem; font-weight: 700;
     }
     .sub-header {
-        text-align: center; color: #4A6FA5; font-size: 1rem; margin-bottom: 2rem;
+        text-align: center; color: var(--kf-muted); font-size: 1rem; margin-bottom: 2rem;
     }
     div[data-testid="stSidebarNav"] { display: none; }
     .custom-nav {
@@ -32,17 +40,19 @@ st.markdown("""
     }
     .custom-nav a {
         text-decoration: none; padding: 0.75rem 2rem; border-radius: 30px;
-        font-weight: 600; font-size: 1rem; transition: all 0.3s;
+        font-weight: 600; font-size: 1rem; transition: all 0.18s ease;
+        background: var(--kf-panel); color: var(--kf-accent); border: 2px solid transparent;
     }
     .custom-nav a.nav-active {
-        background: #1E3A5F; color: white;
+        background: linear-gradient(90deg,var(--kf-primary),var(--kf-accent)); color: white; box-shadow: 0 6px 18px rgba(11,95,255,0.12);
     }
     .custom-nav a.nav-inactive {
-        background: white; color: #1E3A5F; border: 2px solid #1E3A5F;
+        background: var(--kf-panel); color: var(--kf-accent); border: 2px solid rgba(30,58,95,0.08);
     }
-    .custom-nav a:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-    .logo-text { font-size: 1.5rem; font-weight: 700; color: #1E3A5F; text-align: center; }
+    .custom-nav a:hover { transform: translateY(-3px); box-shadow: 0 8px 26px rgba(15,23,42,0.06); }
+    .logo-text { font-size: 1.5rem; font-weight: 700; color: var(--kf-accent); text-align: center; }
     .logout-btn { position: fixed; top: 10px; right: 10px; z-index: 999; }
+    .login-container { background: var(--kf-panel); color: var(--kf-text); }
 </style>
 """, unsafe_allow_html=True)
 
