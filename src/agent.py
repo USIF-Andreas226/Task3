@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import logging
 from typing import Any
 
 from openai import OpenAI
@@ -8,6 +9,8 @@ from openai import OpenAI
 from src.rag import KnowledgeBase, RAGRetriever
 from src.crm import CRMClient, CRMTicket, LeadInfo, ProductsOfInterest, LeadAssessment
 
+# Set up logging for debugging
+logger = logging.getLogger(__name__)
 
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openai/gpt-oss-20b:free")
@@ -18,7 +21,11 @@ def _get_llm() -> OpenAI:
     global _llm_client
     if _llm_client is None:
         if not OPENROUTER_API_KEY:
-            raise ValueError("OPENROUTER_API_KEY environment variable is required")
+            logger.error("❌ OPENROUTER_API_KEY is not set. See STREAMLIT_CLOUD.md for setup instructions.")
+            raise ValueError("OPENROUTER_API_KEY environment variable is required. See STREAMLIT_CLOUD.md")
+        if OPENROUTER_API_KEY.startswith("<") or "REDACTED" in OPENROUTER_API_KEY:
+            logger.error("❌ OPENROUTER_API_KEY is a placeholder. Set the real key in Streamlit Cloud Secrets.")
+            raise ValueError("OPENROUTER_API_KEY is not configured properly")
         _llm_client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=OPENROUTER_API_KEY,
@@ -27,6 +34,7 @@ def _get_llm() -> OpenAI:
                 "X-Title": "Kayfa AI Sales Agent",
             },
         )
+        logger.info("✓ LLM client initialized successfully")
     return _llm_client
 
 
@@ -508,26 +516,48 @@ class SalesAgent:
                 max_tokens=600,
             )
             return resp.choices[0].message.content.strip()
+        except ValueError as e:
+            logger.error(f"❌ Configuration error: {e}")
+            return self._fallback_response(lang, dialect, intent, temperature, objections)
         except Exception as e:
+            logger.error(f"❌ LLM API error: {type(e).__name__}: {str(e)}")
             return self._fallback_response(lang, dialect, intent, temperature, objections)
 
     def _fallback_response(
         self, lang: str, dialect: str, intent: str,
         temperature: str, objections: list[str]
     ) -> str:
+        # Check if running on Streamlit Cloud (STREAMLIT env var is set)
+        on_cloud = "STREAMLIT" in os.environ
+        
         if lang == "en":
             if temperature == "hot":
-                return ("You seem really interested! 🎯 I'd love to help you get started. "
+                msg = ("You seem really interested! 🎯 I'd love to help you get started. "
                         "Could you share your name and the best WhatsApp number to reach you?")
-            return ("Thanks for your interest in Kayfa! "
-                    "Could you tell me more about what you're looking to learn? "
-                    "I can recommend the right course, track, or diploma for you.")
+            else:
+                msg = ("Thanks for your interest in Kayfa! "
+                        "Could you tell me more about what you're looking to learn? "
+                        "I can recommend the right course, track, or diploma for you.")
+            
+            if on_cloud:
+                msg += "\n\n⚠️ *Note: If you're seeing this message instead of detailed recommendations, "
+                msg += "the API key may not be configured. Please check the [Streamlit Cloud setup guide](STREAMLIT_CLOUD.md).*"
+            
+            return msg
+        
         if temperature == "hot":
-            return ("يبدو أنك جاد في التعلم! 🎯 أقدر أساعدك في التقديم. "
-                    "ممكن تعطيني اسمك ورقم واتساب عشان أرسل لك التفاصيل؟")
-        return ("شكراً لاهتمامك في كايفة! 😊 "
-                "أقدر أساعدك في إيجاد الدورة أو المسار المناسب. "
-                "وشو المجال اللي ببالك؟")
+            msg = ("يبدو أنك جاد في التعلم! 🎯 أقدر أساعدك في التقديم. "
+                   "ممكن تعطيني اسمك ورقم واتساب عشان أرسل لك التفاصيل؟")
+        else:
+            msg = ("شكراً لاهتمامك في كايفة! 😊 "
+                   "أقدر أساعدك في إيجاد الدورة أو المسار المناسب. "
+                   "وشو المجال اللي ببالك؟")
+        
+        if on_cloud:
+            msg += "\n\n⚠️ *ملاحظة: إذا كنت تشاهد هذه الرسالة بدل التوصيات المفصلة، "
+            msg += "قد لا يكون مفتاح API مكوناً. يرجى التحقق من [دليل إعداد Streamlit Cloud](STREAMLIT_CLOUD.md).*"
+        
+        return msg
 
     def _fallback_greeting(self, dialect: str) -> str:
         if dialect == "en":

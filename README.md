@@ -44,18 +44,34 @@ An intelligent AI Sales Agent for Kayfa — a conversational assistant that unde
 
 ## 🛠 Setup
 
+### Local Development
+
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# (Optional) Set MongoDB URI for persistent CRM storage
+# Set environment variables in `.env` file (see .env.example)
+# Or export them:
+export OPENROUTER_API_KEY="sk-or-v1-your-key"
 export MONGO_URI="mongodb://your-mongo-instance:27017"
+export LOGIN_USERNAME="admin"
+export LOGIN_PASSWORD="your_password"
 
 # Run the app
 streamlit run app.py
 ```
 
 The app runs without MongoDB — it falls back to in-memory storage automatically.
+
+### 🌐 Deploy to Streamlit Cloud
+
+For full deployment instructions, see **[STREAMLIT_CLOUD.md](STREAMLIT_CLOUD.md)** ← **Start here!**
+
+Quick summary:
+1. Push code to GitHub
+2. Deploy via [share.streamlit.io](https://share.streamlit.io)
+3. Add secrets in Streamlit Cloud settings (see [STREAMLIT_CLOUD.md](STREAMLIT_CLOUD.md) for template)
+4. **Required secrets**: `OPENROUTER_API_KEY`, `MONGO_URI`, `LOGIN_USERNAME`, `LOGIN_PASSWORD`
 
 ## 🔧 Configuration
 
