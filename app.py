@@ -53,6 +53,30 @@ st.markdown("""
     .logo-text { font-size: 1.5rem; font-weight: 700; color: var(--kf-accent); text-align: center; }
     .logout-btn { position: fixed; top: 10px; right: 10px; z-index: 999; }
     .login-container { background: var(--kf-panel); color: var(--kf-text); }
+
+    /* Form controls and labels */
+    label, .stMarkdown, .stText, .stTextInput label, .stTextArea label { color: var(--kf-text) !important; }
+    input, textarea, select {
+        background: var(--kf-panel) !important;
+        color: var(--kf-text) !important;
+        border: 1px solid rgba(30,58,95,0.09) !important;
+        border-radius: 8px !important;
+        padding: 8px 10px !important;
+        box-shadow: none !important;
+    }
+    input::placeholder, textarea::placeholder { color: #94a3b8 !important; opacity: 1 !important; }
+    .stButton>button, button {
+        background: linear-gradient(90deg,var(--kf-primary),var(--kf-accent)) !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 8px 14px !important;
+    }
+    .stButton>button:hover { filter: brightness(0.98) !important; }
+    .login-container input, .login-container textarea {
+        border: 1px solid rgba(11,95,255,0.08) !important;
+        background: #ffffff !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
