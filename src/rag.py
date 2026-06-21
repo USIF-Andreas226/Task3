@@ -196,13 +196,21 @@ class RAGRetriever:
         parts: list[str] = []
         q = query.lower()
 
+        # Always include a summary of available tracks/categories
+        parts.append("## الدورات والمسارات المتاحة في كايفة")
+        available_tracks = set()
+        for c in self.kb.courses:
+            available_tracks.add(c.get("track", "Unknown"))
+        parts.append(f"المسارات المتاحة: {', '.join(sorted(available_tracks))}")
+        parts.append("")
+
         courses = self.kb.semantic_search_courses(query, top_k=5)
         if courses:
-            parts.append("## الدورات ذات الصلة")
+            parts.append("## الدورات ذات الصلة بطلبك")
             for c in courses:
                 price_str = f"${c['price']}" if c["paid"] else "مجاناً"
                 parts.append(
-                    f"- {c['name']} ({c['track']}, {c['level']}, {c['duration']}, {price_str}): {c['summary']}"
+                    f"- **{c['name']}** ({c['track']}, {c['level']}, {c['duration']} ساعة, {price_str}): {c['summary']}"
                 )
             parts.append("")
 
@@ -225,11 +233,34 @@ class RAGRetriever:
                     if c:
                         course_names.append(c["name"])
                 parts.append(
-                    f"- {r['name']} ({rtype}, {r['duration']}, ${r['price']}): مهارات: {', '.join(r.get('skills', [])[:5])}"
+                    f"- **{r['name']}** ({rtype}, {r['duration']}, ${r['price']}): مهارات: {', '.join(r.get('skills', [])[:5])}"
                 )
                 if course_names:
-                    parts.append(f"  يتضمن: {', '.join(course_names)}")
+                    parts.append(f"  الدورات المضمنة: {', '.join(course_names)}")
             parts.append("")
+        
+        # If no specific courses found, show all courses by track to ensure data availability
+        if len(courses) < 2:
+            q_track = None
+            if any(t in q for t in ["ai", "artificial intelligence", "ذكاء"]):
+                q_track = "AI"
+            elif any(t in q for t in ["security", "cybersecurity", "سيبراني", "أمن"]):
+                q_track = "Cybersecurity"
+            elif any(t in q for t in ["data science", "data", "بيانات"]):
+                q_track = "Data Science"
+            elif any(t in q for t in ["web", "development", "backend", "frontend", "تطوير"]):
+                q_track = "Web Development"
+                
+            if q_track:
+                track_courses = [c for c in self.kb.courses if c.get("track") == q_track]
+                if track_courses and not courses:
+                    parts.append(f"## جميع دورات مسار {q_track}")
+                    for c in track_courses:
+                        price_str = f"${c['price']}" if c["paid"] else "مجاناً"
+                        parts.append(
+                            f"- **{c['name']}** ({c['level']}, {c['duration']} ساعة, {price_str}): {c['summary']}"
+                        )
+                    parts.append("")
 
         diploma_keywords = ["diploma", "دبلوم", "دبلومة", "live", "مباشر"]
         if any(k in q for k in diploma_keywords):
@@ -262,7 +293,7 @@ class RAGRetriever:
                     parts.append("## سياسة الاسترجاع")
                     parts.append(refund_doc[start : start + 1000])
 
-        if len(parts) < 3:
+        if len(parts) < 4:
             md_results = self.kb.search_markdown(query)
             if md_results:
                 seen: set[str] = set()
@@ -270,6 +301,13 @@ class RAGRetriever:
                     key = f"{doc_name}:{snippet[:40]}"
                     if key not in seen:
                         seen.add(key)
-                        parts.append(f"[{doc_name}]: {snippet}")
+                        parts.append(f"📋 **{doc_name}**: {snippet}")
+        
+        # Always include company info if context is still sparse
+        if len(parts) < 5:
+            company_doc = self.kb.get_markdown_doc("kayfa_company_overview")
+            if company_doc:
+                parts.append("## نبذة عن كايفة")
+                parts.append(company_doc[:500])
 
         return "\n".join(parts)
