@@ -55,27 +55,43 @@ st.markdown("""
     .login-container { background: var(--kf-panel); color: var(--kf-text); }
 
     /* Form controls and labels */
-    label, .stMarkdown, .stText, .stTextInput label, .stTextArea label { color: var(--kf-text) !important; }
+    label, .stMarkdown, .stText, .stTextInput label, .stTextArea label, .stSelectbox label {
+        color: #1E3A5F !important;
+        font-weight: 500 !important;
+        display: block !important;
+        margin-bottom: 0.5rem !important;
+    }
     input, textarea, select {
-        background: var(--kf-panel) !important;
-        color: var(--kf-text) !important;
-        border: 1px solid rgba(30,58,95,0.09) !important;
+        background: #FFFFFF !important;
+        color: #0F172A !important;
+        border: 2px solid #D0D8E8 !important;
         border-radius: 8px !important;
-        padding: 8px 10px !important;
+        padding: 10px 12px !important;
         box-shadow: none !important;
+        font-size: 1rem !important;
     }
     input::placeholder, textarea::placeholder { color: #94a3b8 !important; opacity: 1 !important; }
+    input:focus, textarea:focus, select:focus {
+        border-color: #0B5FFF !important;
+        box-shadow: 0 0 0 3px rgba(11, 95, 255, 0.1) !important;
+    }
     .stButton>button, button {
         background: linear-gradient(90deg,var(--kf-primary),var(--kf-accent)) !important;
         color: #fff !important;
         border: none !important;
         border-radius: 8px !important;
-        padding: 8px 14px !important;
+        padding: 10px 20px !important;
+        font-weight: 600 !important;
     }
     .stButton>button:hover { filter: brightness(0.98) !important; }
     .login-container input, .login-container textarea {
-        border: 1px solid rgba(11,95,255,0.08) !important;
-        background: #ffffff !important;
+        border: 2px solid #D0D8E8 !important;
+        background: #FFFFFF !important;
+        color: #0F172A !important;
+    }
+    .login-container label {
+        color: #1E3A5F !important;
+        font-weight: 600 !important;
     }
 </style>
 """, unsafe_allow_html=True)
