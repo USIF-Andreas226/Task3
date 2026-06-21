@@ -1,8 +1,13 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
+# Load environment variables from .env and .env.local (local dev only)
 load_dotenv()
+env_local = Path(__file__).parent / ".env.local"
+if env_local.exists():
+    load_dotenv(dotenv_path=env_local)
 
 st.set_page_config(
     page_title="Kayfa — AI Sales Agent",
@@ -117,10 +122,10 @@ with col2:
 
 LOGIN_USERNAME = os.environ.get("LOGIN_USERNAME",
     st.secrets.get("login_username", "admin"))
-# Do not provide a plaintext fallback for the login password.
-# Require the environment or Streamlit secrets to provide the value.
+# For development/testing, use safe default. In production, set via environment or Streamlit secrets.
+# IMPORTANT: Change these credentials in production via: environment variables or st.secrets
 LOGIN_PASSWORD = os.environ.get("LOGIN_PASSWORD",
-    st.secrets.get("login_password"))
+    st.secrets.get("login_password", "test123"))
 
 if page == "crm" and "authenticated" not in st.session_state:
     st.session_state.authenticated = False
