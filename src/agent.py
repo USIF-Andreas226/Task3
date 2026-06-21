@@ -9,8 +9,7 @@ from src.rag import KnowledgeBase, RAGRetriever
 from src.crm import CRMClient, CRMTicket, LeadInfo, ProductsOfInterest, LeadAssessment
 
 
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY",
-    "REDACTED_OPENROUTER_API_KEY")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openai/gpt-oss-20b:free")
 
 _llm_client: OpenAI | None = None
@@ -18,6 +17,8 @@ _llm_client: OpenAI | None = None
 def _get_llm() -> OpenAI:
     global _llm_client
     if _llm_client is None:
+        if not OPENROUTER_API_KEY:
+            raise ValueError("OPENROUTER_API_KEY environment variable is required")
         _llm_client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=OPENROUTER_API_KEY,
