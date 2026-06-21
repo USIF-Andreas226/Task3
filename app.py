@@ -67,8 +67,10 @@ with col2:
 
 LOGIN_USERNAME = os.environ.get("LOGIN_USERNAME",
     st.secrets.get("login_username", "admin"))
+# Do not provide a plaintext fallback for the login password.
+# Require the environment or Streamlit secrets to provide the value.
 LOGIN_PASSWORD = os.environ.get("LOGIN_PASSWORD",
-    st.secrets.get("login_password", "REDACTED_LOGIN_PASSWORD"))
+    st.secrets.get("login_password"))
 
 if page == "crm" and "authenticated" not in st.session_state:
     st.session_state.authenticated = False
