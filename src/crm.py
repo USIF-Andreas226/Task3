@@ -85,7 +85,13 @@ class CRMClient:
 
     def save_ticket(self, ticket: CRMTicket) -> str:
         data = ticket.model_dump()
-        data["ticket_id"] = f"LEAD-2026-{len(self._in_memory) + 1:04d}"
+        counter = len(self._in_memory)
+        if self._connected and self.collection is not None:
+            try:
+                counter = self.collection.count_documents({})
+            except Exception:
+                pass
+        data["ticket_id"] = f"LEAD-2026-{counter + 1:04d}"
         data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
         if self._connected and self.collection is not None:
             try:

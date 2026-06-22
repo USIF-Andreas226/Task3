@@ -443,17 +443,19 @@ class SalesAgent:
 
         for c in self.kb.courses:
             cname_norm = c["name"].lower().replace("-", " ")
-            cwords = set(cname_norm.split())
+            cname_parts = cname_norm.split()
+            cwords = set(cname_parts)
             twords = set(t_norm.split())
-            matched = bool(cwords & twords)
-            if not matched:
-                cname_parts = cname_norm.split()
-                if len(cname_parts) >= 3:
-                    for i in range(len(cname_parts) - 1):
-                        bigram = " ".join(cname_parts[i:i+2])
-                        if bigram in t_norm:
-                            matched = True
-                            break
+            matched = False
+            overlap = cwords & twords
+            if len(overlap) >= 2:
+                matched = True
+            if not matched and len(cname_parts) >= 3:
+                for i in range(len(cname_parts) - 1):
+                    bigram = " ".join(cname_parts[i:i+2])
+                    if bigram in t_norm:
+                        matched = True
+                        break
             if matched and c["name"] not in self.current_lead.products.courses:
                 self.current_lead.products.courses.append(c["name"])
 
