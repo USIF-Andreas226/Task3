@@ -1,4 +1,4 @@
-# Data Summary — Kayfa Knowledge Base
+# Data Summary — Kayf Knowledge Base
 
 This document provides a quick reference for how the knowledge base files are organized and how they relate to each other.
 

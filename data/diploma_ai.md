@@ -11,7 +11,7 @@
 **Link:** https://kayfa.com/diplomas/ai
 
 ## Program Overview
-The AI Diploma is Kayfa's flagship live program, designed to take you from an intermediate programmer to a job-ready AI engineer. Over 12 intensive weeks, you'll work through machine learning, deep learning, NLP, computer vision, and large language models — with live instruction, real-world projects, and personalized mentorship.
+The AI Diploma is Kayf's flagship live program, designed to take you from an intermediate programmer to a job-ready AI engineer. Over 12 intensive weeks, you'll work through machine learning, deep learning, NLP, computer vision, and large language models — with live instruction, real-world projects, and personalized mentorship.
 
 ## Curriculum
 - **Week 1-2:** Python for ML & Math Refresher
@@ -35,7 +35,7 @@ The AI Diploma is Kayfa's flagship live program, designed to take you from an in
 - 85% of diploma graduates report career advancement within 6 months
 
 ## Pitch Lines
-"هل تحلم بالعمل في مجال الذكاء الاصطناعي؟ دبلومة AI المباشرة من كايفة تمنحك 12 أسبوع من التدريب المكثف مع د. سامي الجابر، من الأساسيات حتى بناء نماذج ذكاء اصطناعي حقيقية. محاضرات مباشرة، مشاريع تطبيقية، وشهادة معتمدة."
+"هل تحلم بالعمل في مجال الذكاء الاصطناعي؟ دبلومة AI المباشرة من كيف تمنحك 12 أسبوع من التدريب المكثف مع د. سامي الجابر، من الأساسيات حتى بناء نماذج ذكاء اصطناعي حقيقية. محاضرات مباشرة، مشاريع تطبيقية، وشهادة معتمدة."
 
 ## Objection Handling
 

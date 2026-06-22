@@ -1,6 +1,6 @@
-# Kayfa Paid Individual Courses
+# Kayf Paid Individual Courses
 
-Below are all paid individual courses available on Kayfa, listed with prices in USD.
+Below are all paid individual courses available on Kayf, listed with prices in USD.
 
 ## Programming
 | Course | Price (USD) | Duration | Level |

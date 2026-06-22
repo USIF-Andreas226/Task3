@@ -1,6 +1,6 @@
 # Streamlit Cloud Setup Guide
 
-This guide explains how to set up your Kayfa AI Sales Agent on Streamlit Cloud with proper secrets.
+This guide explains how to set up your Kayf AI Sales Agent on Streamlit Cloud with proper secrets.
 
 ## What Secrets Are Required?
 

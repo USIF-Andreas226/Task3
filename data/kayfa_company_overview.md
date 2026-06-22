@@ -1,7 +1,7 @@
-# Kayfa Company Overview
+# Kayf Company Overview
 
 ## Who We Are
-Kayfa is a leading online education platform specializing in technology and digital skills training for the Arabic-speaking world. Founded in 2020 and headquartered in Amman, Jordan, we have trained over 15,000 students across 20+ countries.
+Kayf is a leading online education platform specializing in technology and digital skills training for the Arabic-speaking world. Founded in 2020 and headquartered in Amman, Jordan, we have trained over 15,000 students across 20+ countries.
 
 ## Our Mission
 To make high-quality tech education accessible and affordable for Arabic speakers everywhere, bridging the skills gap and empowering the next generation of technology leaders.

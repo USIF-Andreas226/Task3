@@ -73,7 +73,7 @@ def show():
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     st.markdown(
         "<h3 style='text-align:center;color:#1E3A5F;margin-bottom:0;'>"
-        "💬 تحدث مع مستشار كايفة — Talk to Kayfa Advisor</h3>",
+        "💬 تحدث مع مستشار كيف — Talk to Kayf Advisor</h3>",
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -87,7 +87,7 @@ def show():
         st.markdown(
             '<div class="greeting-banner">'
             '<div style="font-size:3rem;margin-bottom:1rem;">🎓</div>'
-            '<h4 style="color:#1E3A5F;">مرحباً بك في كايفة!</h4>'
+            '<h4 style="color:#1E3A5F;">مرحباً بك في كيف!</h4>'
             '<p style="color:#4A6FA5;">أنا مساعدك الشخصي. كيف أقدر أساعدك اليوم؟</p>'
             '<p style="color:#4A6FA5;font-size:0.9rem;">I\'m your personal assistant. How can I help you today?</p>'
         , unsafe_allow_html=True)

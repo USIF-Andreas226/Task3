@@ -1,4 +1,4 @@
-# Kayfa Privacy Policy
+# Kayf Privacy Policy
 
 ## Information We Collect
 - **Account Information:** Name, email address, phone number, country, and language preferences.

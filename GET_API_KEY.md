@@ -125,7 +125,7 @@ OPENROUTER_API_KEY = "sk-or-v1-local-test-key-replace-this-with-real-key"
 ```
 
 User types: "Tell me about AI courses"
-Response: "شكراً لاهتمامك في كايفة! 😊 أقدر أساعدك..."
+Response: "شكراً لاهتمامك في كيف! 😊 أقدر أساعدك..."
 (Generic fallback only)
 
 ### ✅ AFTER (Real Key)

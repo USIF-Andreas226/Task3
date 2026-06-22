@@ -197,7 +197,7 @@ class RAGRetriever:
         q = query.lower()
 
         # Always include a summary of available tracks/categories
-        parts.append("## الدورات والمسارات المتاحة في كايفة")
+        parts.append("## الدورات والمسارات المتاحة في كيف")
         available_tracks = set()
         for c in self.kb.courses:
             available_tracks.add(c.get("track", "Unknown"))
@@ -307,7 +307,7 @@ class RAGRetriever:
         if len(parts) < 5:
             company_doc = self.kb.get_markdown_doc("kayfa_company_overview")
             if company_doc:
-                parts.append("## نبذة عن كايفة")
+                parts.append("## نبذة عن كيف")
                 parts.append(company_doc[:500])
 
         return "\n".join(parts)

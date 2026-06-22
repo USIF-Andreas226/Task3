@@ -11,7 +11,7 @@
 **Link:** https://kayfa.com/diplomas/soc
 
 ## Program Overview
-The SOC Diploma is Kayfa's most advanced live program, preparing you for a career as a SOC Analyst. Over 14 intensive weeks, you'll master SIEM operations, incident response, threat hunting, digital forensics, and security monitoring — with hands-on labs, real-world scenarios, and a comprehensive capstone.
+The SOC Diploma is Kayf's most advanced live program, preparing you for a career as a SOC Analyst. Over 14 intensive weeks, you'll master SIEM operations, incident response, threat hunting, digital forensics, and security monitoring — with hands-on labs, real-world scenarios, and a comprehensive capstone.
 
 ## Curriculum
 - **Week 1-2:** Networking & Linux for SOC
@@ -36,7 +36,7 @@ The SOC Diploma is Kayfa's most advanced live program, preparing you for a caree
 - Average starting salary for SOC analysts in MENA: $18,000-$30,000/year
 
 ## Pitch Lines
-"سوق العمل محتاج محللي SOC — والفرصة قدامك. دبلومة SOC من كايفة: 14 أسبوع تدريب مباشر مع لينا المصري، محترفة معتمدة (CISSP، CEH)، ومشاريع عملية تحضّرك لشغل فعلي. وشهادة معتمدة من وزارة التربية والتعليم."
+"سوق العمل محتاج محللي SOC — والفرصة قدامك. دبلومة SOC من كيف: 14 أسبوع تدريب مباشر مع لينا المصري، محترفة معتمدة (CISSP، CEH)، ومشاريع عملية تحضّرك لشغل فعلي. وشهادة معتمدة من وزارة التربية والتعليم."
 
 ## Objection Handling
 

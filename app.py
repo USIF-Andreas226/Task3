@@ -17,7 +17,7 @@ for _key in ["OPENROUTER_API_KEY", "OPENROUTER_MODEL", "MONGO_URI", "MONGO_DB", 
             os.environ[_key] = val
 
 st.set_page_config(
-    page_title="Kayfa — AI Sales Agent",
+    page_title="Kayf — AI Sales Agent",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -112,7 +112,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="logo-text">🎓 Kayfa — AI Sales Agent</div>', unsafe_allow_html=True)
+st.markdown('<div class="logo-text">🎓 Kayf — AI Sales Agent</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-header">مساعد المبيعات الذكي | Smart Sales Assistant</div>', unsafe_allow_html=True)
 
 page = st.session_state.get("page", "chat")

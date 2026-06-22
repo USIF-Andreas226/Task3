@@ -1,6 +1,6 @@
-# Kayfa Instructor Network
+# Kayf Instructor Network
 
-Kayfa's instructors are industry professionals with real-world experience and a passion for teaching. Our 25 instructors come from leading companies and institutions across the Middle East and globally.
+Kayf's instructors are industry professionals with real-world experience and a passion for teaching. Our 25 instructors come from leading companies and institutions across the Middle East and globally.
 
 ## Featured Instructors
 

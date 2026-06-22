@@ -1,11 +1,11 @@
-# Week 3 Task — Agentic AI Internship @ Kayfa: AI Sales Agent
+# Week 3 Task — Agentic AI Internship @ Kayf: AI Sales Agent
 
-An intelligent AI Sales Agent for Kayfa — a conversational assistant that understands what visitors want, recommends the right Kayfa products grounded in the real catalog, handles objections honestly, moves conversations toward enrollment, and captures leads as CRM tickets.
+An intelligent AI Sales Agent for Kayf — a conversational assistant that understands what visitors want, recommends the right Kayf products grounded in the real catalog, handles objections honestly, moves conversations toward enrollment, and captures leads as CRM tickets.
 
 ## 🚀 Features
 
 - **Bilingual Chat** — Speaks Arabic (Egyptian, Saudi, Syrian dialects) and English with automatic language detection
-- **RAG-Grounded Responses** — All answers are grounded in Kayfa's real knowledge base (52 courses, 13 roadmaps, pricing, policies, diploma briefs)
+- **RAG-Grounded Responses** — All answers are grounded in Kayf's real knowledge base (52 courses, 13 roadmaps, pricing, policies, diploma briefs)
 - **Intent Detection** — Identifies browsing, comparing, price-sensitive, hesitant, and ready-to-enroll visitors
 - **Lead Capture** — Detects buying signals, collects prospect info, and saves rich CRM tickets to MongoDB (with in-memory fallback)
 - **Persuasive Sales** — Handles objections (price, time, experience, trust) with pre-written responses from diploma briefs
@@ -131,7 +131,7 @@ client = OpenAI(
     api_key="sk-or-v1-your-key-here",
     default_headers={
         "HTTP-Referer": "https://kayfa.com",
-        "X-Title": "Kayfa AI Sales Agent",
+        "X-Title": "Kayf AI Sales Agent",
     },
 )
 
@@ -305,7 +305,7 @@ for ticket in all_tickets:
 ## 🤖 Agent Capabilities
 
 - **Intent & Dialect Detection**: Automatically identifies visitor intent and Arabic dialect
-- **Course Recommendations**: Maps visitor goals to real Kayfa products
+- **Course Recommendations**: Maps visitor goals to real Kayf products
 - **Objection Handling**: Addresses concerns about price, timing, prerequisites, trust, and refunds
 - **Lead Scoring**: Hot/Warm/Cold based on buying signals and engagement
 - **CRM Ticket Creation**: Captures name, phone, city, products of interest, buying signals, objections, and conversation summary in Arabic

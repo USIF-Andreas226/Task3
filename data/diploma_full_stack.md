@@ -36,7 +36,7 @@ The Full-Stack Web Development Diploma is a comprehensive live program designed 
 - Average starting salary in MENA: $12,000-$25,000/year
 
 ## Pitch Lines
-"تبغى تصير مطوّر ويب كامل؟ دبلومة Full-Stack من كايفة تأخذك من الصفر إلى الاحتراف في 14 أسبوع — مع محمد العتيبي، مشاريع حقيقية، وشهادة معتمدة."
+"تبغى تصير مطوّر ويب كامل؟ دبلومة Full-Stack من كيف تأخذك من الصفر إلى الاحتراف في 14 أسبوع — مع محمد العتيبي، مشاريع حقيقية، وشهادة معتمدة."
 
 ## Objection Handling
 

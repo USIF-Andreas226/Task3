@@ -32,7 +32,7 @@ The Penetration Testing Diploma is an intensive live program that prepares you f
 - Vulnerability Assessment Analyst
 
 ## Pitch Lines
-"تخترق الأنظمة بشكل قانوني وتكسب — دبلومة اختبار الاختراق من كايفة مع نور الدين حكيم.
+"تخترق الأنظمة بشكل قانوني وتكسب — دبلومة اختبار الاختراق من كيف مع نور الدين حكيم.
 
 ## Objection Handling
 
@@ -43,7 +43,7 @@ The Penetration Testing Diploma is an intensive live program that prepares you f
 "تقسيط 3 دفعات — كل دفعة 283.33$. وهاد البرنامج بيحضّرك لشهادة OSCP اللي بتكلف أكثر من $1,000 لامتحانها فقط — دبلومتنا بتغطي كل المواد التحضيرية."
 
 **Objection: هل في شهادة معتمدة؟**
-"أكيد. شهادة من كايفة معتمدة من وزارة التربية والتعليم الأردنية."
+"أكيد. شهادة من كيف معتمدة من وزارة التربية والتعليم الأردنية."
 
 ## Closing Line
 "الدفعة الجديدة بتفتح بعد 5 أسابيع. سارع بالحجز — الأماكن بتنتهي بسرعة!"

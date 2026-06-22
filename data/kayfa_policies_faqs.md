@@ -1,4 +1,4 @@
-# Kayfa Policies & FAQs
+# Kayf Policies & FAQs
 
 ## Refund Policy
 
@@ -63,8 +63,8 @@ Our certificates are accredited by the Jordanian Ministry of Education and recog
 ## FAQ
 
 ### General Questions
-**Q: Is Kayfa a recognized institution?**
-A: Yes. Kayfa is licensed by the Jordanian Ministry of Education, ISO 9001:2015 certified, and partnered with CompTIA and Microsoft.
+**Q: Is Kayf a recognized institution?**
+A: Yes. Kayf is licensed by the Jordanian Ministry of Education, ISO 9001:2015 certified, and partnered with CompTIA and Microsoft.
 
 **Q: Are the courses in Arabic or English?**
 A: Most courses are taught in Arabic (various dialects), with technical terms kept in English. Some advanced courses include English materials with Arabic instruction.
@@ -73,7 +73,7 @@ A: Most courses are taught in Arabic (various dialects), with technical terms ke
 A: Yes. Contact our support team within 7 days of enrollment to switch tracks. Any price difference will be adjusted.
 
 **Q: Is there a mobile app?**
-A: Yes. Kayfa is available on iOS and Android through the App Store and Google Play.
+A: Yes. Kayf is available on iOS and Android through the App Store and Google Play.
 
 ### Pricing & Payment
 **Q: Do you offer student discounts?**

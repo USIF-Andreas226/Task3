@@ -1,6 +1,6 @@
-# Kayfa Free Educational Content
+# Kayf Free Educational Content
 
-Kayfa offers several free courses designed to help beginners get started and explore different fields before committing to paid content.
+Kayf offers several free courses designed to help beginners get started and explore different fields before committing to paid content.
 
 ## Free Courses
 

@@ -1,4 +1,4 @@
-# Kayfa Paid Educational Tracks (Self-Paced)
+# Kayf Paid Educational Tracks (Self-Paced)
 
 Self-paced tracks are curated collections of courses designed to take you from beginner to job-ready in a specific field. Each track includes guided learning paths, hands-on projects, and a track completion certificate.
 

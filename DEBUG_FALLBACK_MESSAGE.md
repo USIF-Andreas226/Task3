@@ -132,7 +132,7 @@ Before relying on Streamlit Cloud, test locally:
 
 ### ❌ Before (Fallback Message)
 - User types: "دورات الذكاء الاصطناعي"
-- App responds: "شكراً لاهتمامك في كايفة! 😊..."
+- App responds: "شكراً لاهتمامك في كيف! 😊..."
 - Status: API not connected
 
 ### ✅ After (Real AI Response)
