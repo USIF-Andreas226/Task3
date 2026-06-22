@@ -9,6 +9,13 @@ env_local = Path(__file__).parent / ".env.local"
 if env_local.exists():
     load_dotenv(dotenv_path=env_local)
 
+# Streamlit Cloud: inject secrets into environment for sub-modules (agent.py, crm.py)
+for _key in ["OPENROUTER_API_KEY", "OPENROUTER_MODEL", "MONGO_URI", "MONGO_DB", "MONGO_COLLECTION"]:
+    if _key not in os.environ:
+        val = st.secrets.get(_key)
+        if val:
+            os.environ[_key] = val
+
 st.set_page_config(
     page_title="Kayfa — AI Sales Agent",
     page_icon="🎓",
@@ -21,7 +28,7 @@ sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
     :root {
         --kf-primary: #0B5FFF; /* bright blue */
         --kf-accent: #1E3A5F;  /* deep navy */
@@ -40,6 +47,10 @@ st.markdown("""
         text-align: center; color: var(--kf-muted); font-size: 1rem; margin-bottom: 2rem;
     }
     div[data-testid="stSidebarNav"] { display: none; }
+    section[data-testid="stSidebar"] { display: none !important; }
+    div[data-testid="collapsedControl"] { display: none !important; }
+    header[data-testid="stHeader"] { display: none; }
+    .main > div { padding-left: 0 !important; padding-right: 0 !important; }
     .custom-nav {
         display: flex; justify-content: center; gap: 1rem; margin: 1rem 0 2rem;
     }

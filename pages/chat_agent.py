@@ -31,7 +31,8 @@ def show():
         border-radius: 20px 20px 5px 20px !important;
         padding: 12px 18px !important; margin: 8px 0 !important;
         max-width: 85% !important; float: right !important; clear: both !important;
-        font-size: 1rem !important; line-height: 1.6 !important;
+        font-size: 1rem !important; line-height: 1.7 !important;
+        font-weight: 500 !important;
     }
     .user-bubble * { color: #FFFFFF !important; }
     .assistant-bubble {
@@ -42,9 +43,11 @@ def show():
         padding: 12px 18px !important; margin: 8px 0 !important;
         max-width: 85% !important; float: left !important; clear: both !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
-        font-size: 1rem !important; line-height: 1.6 !important;
+        font-size: 1rem !important; line-height: 1.7 !important;
+        font-weight: 400 !important;
     }
     .assistant-bubble * { color: #1A1A2E !important; }
+    .assistant-bubble strong { font-weight: 700 !important; }
     .clearfix::after { content: ""; display: table; clear: both; }
     .greeting-banner {
         background: linear-gradient(135deg, #E8F0FE 0%, #F0F4FF 100%);
