@@ -480,7 +480,7 @@ class SalesAgent:
         context: str
     ) -> str:
         is_first = len(self.conversation_history) <= 1
-        is_generic = len(user_input.strip()) < 10 or (intent == "browsing" and not re.search(r"(cybersecurity|security|soc|data\s*science|ai|artificial intelligence|web|programming|python|machine learning|deep learning|cloud|devops|mobile|hacking|pentest|network|linux)", user_input.lower()))
+        is_generic = len(user_input.strip()) < 10 or (intent == "browsing" and not re.search(r"(cybersecurity|security|soc|data\s*science|ai|artificial intelligence|web|programming|python|machine learning|deep learning|cloud|devops|mobile|hacking|pentest|network|linux|course|courses|دورات|كورسات|مسارات|diploma|دبلوم|دبلومة|available|متاحة|offer|تقدم|عندك|شو عند)", user_input.lower()))
         if is_first and is_generic and not buying_signals and not objections:
             return self._fallback_greeting("en" if lang == "en" else dialect)
 
