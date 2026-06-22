@@ -7,50 +7,50 @@ def show():
 <style>
     .crm-container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
     .ticket-card {
-        background: white; border-radius: 16px; padding: 1.5rem; margin: 1rem 0;
-        border: 1px solid #E0E7EF; box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        background: #1A1D27; border-radius: 16px; padding: 1.5rem; margin: 1rem 0;
+        border: 1px solid #2D3142; box-shadow: 0 2px 12px rgba(0,0,0,0.2);
         direction: rtl; text-align: right;
     }
     .ticket-card.en { direction: ltr; text-align: left; }
     .ticket-header {
         display: flex; justify-content: space-between; align-items: center;
         margin-bottom: 1rem; padding-bottom: 0.75rem;
-        border-bottom: 2px solid #F0F4F8;
+        border-bottom: 1px solid #2D3142;
     }
-    .ticket-id { font-size: 1.1rem; font-weight: 700; color: #1E3A5F; }
+    .ticket-id { font-size: 1.1rem; font-weight: 700; color: #93C5FD; }
     .ticket-temp {
         padding: 0.3rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
     }
-    .temp-hot { background: #FFE8E8; color: #D32F2F; }
-    .temp-warm { background: #FFF3E0; color: #E65100; }
-    .temp-cold { background: #E8F0FE; color: #1565C0; }
+    .temp-hot { background: #4A1C1C; color: #FF8A80; }
+    .temp-warm { background: #3D2E1A; color: #FFB74D; }
+    .temp-cold { background: #1A2744; color: #64B5F6; }
     .ticket-section {
-        margin: 0.75rem 0; padding: 0.75rem; background: #F8FAFC; border-radius: 10px;
+        margin: 0.75rem 0; padding: 0.75rem; background: #242738; border-radius: 10px;
     }
     .ticket-section-title {
-        font-weight: 600; color: #1E3A5F; margin-bottom: 0.5rem; font-size: 0.95rem;
+        font-weight: 600; color: #93C5FD; margin-bottom: 0.5rem; font-size: 0.95rem;
     }
     .ticket-field { margin: 0.4rem 0; font-size: 0.9rem; }
-    .ticket-label { color: #6B7A8F; font-weight: 500; }
-    .ticket-value { color: #1A1A2E; }
+    .ticket-label { color: #94A3B8; font-weight: 500; }
+    .ticket-value { color: #E2E8F0; }
     .signal-badge {
         display: inline-block; padding: 0.2rem 0.6rem; border-radius: 12px;
-        background: #E8F5E9; color: #2E7D32; font-size: 0.8rem; margin: 0.15rem;
+        background: #1B3D2A; color: #81C784; font-size: 0.8rem; margin: 0.15rem;
     }
     .no-tickets {
-        text-align: center; padding: 4rem 2rem; color: #6B7A8F;
+        text-align: center; padding: 4rem 2rem; color: #94A3B8;
     }
     .stats-grid {
         display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 1rem; margin: 1rem 0;
     }
     .stat-card {
-        background: white; border-radius: 12px; padding: 1.25rem; text-align: center;
-        border: 1px solid #E0E7EF;
+        background: #1A1D27; border-radius: 12px; padding: 1.25rem; text-align: center;
+        border: 1px solid #2D3142;
     }
-    .stat-number { font-size: 2rem; font-weight: 700; color: #1E3A5F; }
-    .stat-label { font-size: 0.85rem; color: #6B7A8F; margin-top: 0.25rem; }
-    .summary-text { line-height: 1.7; color: #333; font-size: 0.95rem; }
+    .stat-number { font-size: 2rem; font-weight: 700; color: #93C5FD; }
+    .stat-label { font-size: 0.85rem; color: #94A3B8; margin-top: 0.25rem; }
+    .summary-text { line-height: 1.7; color: #E2E8F0; font-size: 0.95rem; }
     .arabic-ar { direction: rtl; text-align: right; }
     .arabic-en { direction: ltr; text-align: left; }
 </style>

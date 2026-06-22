@@ -30,12 +30,14 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
     :root {
-        --kf-primary: #0B5FFF; /* bright blue */
-        --kf-accent: #1E3A5F;  /* deep navy */
-        --kf-bg: #F8FAFF;      /* page background */
-        --kf-panel: #FFFFFF;   /* card background */
-        --kf-text: #0F172A;    /* primary text */
-        --kf-muted: #6B7A8F;   /* secondary text */
+        --kf-primary: #3B82F6;  /* bright blue */
+        --kf-accent: #60A5FA;   /* light blue */
+        --kf-bg: #0F1117;       /* page background (near black) */
+        --kf-panel: #1A1D27;    /* card background */
+        --kf-text: #E2E8F0;     /* primary text */
+        --kf-muted: #94A3B8;    /* secondary text */
+        --kf-border: #2D3142;   /* border color */
+        --kf-input-bg: #242738; /* input background */
     }
     * { font-family: 'Cairo', sans-serif; color: var(--kf-text); }
     body, .stApp { background-color: var(--kf-bg) !important; }
@@ -57,60 +59,73 @@ st.markdown("""
     .custom-nav a {
         text-decoration: none; padding: 0.75rem 2rem; border-radius: 30px;
         font-weight: 600; font-size: 1rem; transition: all 0.18s ease;
-        background: var(--kf-panel); color: var(--kf-accent); border: 2px solid transparent;
+        background: var(--kf-panel); color: var(--kf-accent); border: 1px solid var(--kf-border);
     }
     .custom-nav a.nav-active {
-        background: linear-gradient(90deg,var(--kf-primary),var(--kf-accent)); color: white; box-shadow: 0 6px 18px rgba(11,95,255,0.12);
+        background: linear-gradient(90deg,var(--kf-primary),#2563EB); color: white; box-shadow: 0 6px 18px rgba(59,130,246,0.2);
     }
     .custom-nav a.nav-inactive {
-        background: var(--kf-panel); color: var(--kf-accent); border: 2px solid rgba(30,58,95,0.08);
+        background: var(--kf-panel); color: var(--kf-muted); border: 1px solid var(--kf-border);
     }
-    .custom-nav a:hover { transform: translateY(-3px); box-shadow: 0 8px 26px rgba(15,23,42,0.06); }
+    .custom-nav a:hover { transform: translateY(-3px); box-shadow: 0 8px 26px rgba(0,0,0,0.3); }
     .logo-text { font-size: 1.5rem; font-weight: 700; color: var(--kf-accent); text-align: center; }
     .logout-btn { position: fixed; top: 10px; right: 10px; z-index: 999; }
-    .login-container { background: var(--kf-panel); color: var(--kf-text); }
+    .login-container { background: var(--kf-panel); color: var(--kf-text); border: 1px solid var(--kf-border); border-radius: 20px; }
 
     /* Form controls and labels */
     label, .stMarkdown, .stText, .stTextInput label, .stTextArea label, .stSelectbox label {
-        color: #1E3A5F !important;
+        color: var(--kf-accent) !important;
         font-weight: 500 !important;
         display: block !important;
         margin-bottom: 0.5rem !important;
     }
     input, textarea, select {
-        background: #FFFFFF !important;
-        color: #0F172A !important;
-        border: 2px solid #D0D8E8 !important;
+        background: var(--kf-input-bg) !important;
+        color: var(--kf-text) !important;
+        border: 1px solid var(--kf-border) !important;
         border-radius: 8px !important;
         padding: 10px 12px !important;
         box-shadow: none !important;
         font-size: 1rem !important;
     }
-    input::placeholder, textarea::placeholder { color: #94a3b8 !important; opacity: 1 !important; }
+    input::placeholder, textarea::placeholder { color: #64748B !important; opacity: 1 !important; }
     input:focus, textarea:focus, select:focus {
-        border-color: #0B5FFF !important;
-        box-shadow: 0 0 0 3px rgba(11, 95, 255, 0.1) !important;
+        border-color: var(--kf-primary) !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
     }
     .stButton>button, button {
-        background: linear-gradient(90deg,var(--kf-primary),var(--kf-accent)) !important;
+        background: linear-gradient(90deg,var(--kf-primary),#2563EB) !important;
         color: #fff !important;
         border: none !important;
         border-radius: 8px !important;
         padding: 10px 20px !important;
         font-weight: 600 !important;
     }
-    .stButton>button:hover { filter: brightness(0.98) !important; }
+    .stButton>button:hover { filter: brightness(1.1) !important; }
+    .stButton>button[kind="secondary"] {
+        background: var(--kf-panel) !important;
+        color: var(--kf-accent) !important;
+        border: 1px solid var(--kf-border) !important;
+    }
     .login-container input, .login-container textarea {
-        border: 2px solid #D0D8E8 !important;
-        background: #FFFFFF !important;
-        color: #0F172A !important;
+        border: 1px solid var(--kf-border) !important;
+        background: var(--kf-input-bg) !important;
+        color: var(--kf-text) !important;
     }
     .login-container label {
-        color: #1E3A5F !important;
+        color: var(--kf-accent) !important;
         font-weight: 600 !important;
     }
+    /* Streamlit default element overrides */
+    .stMarkdown, .stText, p, h1, h2, h3, h4, h5, h6, span:not(.user-bubble *):not(.assistant-bubble *) {
+        color: var(--kf-text) !important;
+    }
+    div.stForm { background: transparent !important; border: none !important; }
+    .stAlert { background: var(--kf-panel) !important; color: var(--kf-text) !important; border: 1px solid var(--kf-border) !important; }
+    .stSpinner > div { border-color: var(--kf-primary) !important; }
+    .st-emotion-cache-1kyx7za, .st-emotion-cache-1wmy9hl, .st-emotion-cache-1avcm0n { background: var(--kf-bg) !important; }
 </style>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 st.markdown('<div class="logo-text">🎓 Kayf — AI Sales Agent</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-header">مساعد المبيعات الذكي | Smart Sales Assistant</div>', unsafe_allow_html=True)
