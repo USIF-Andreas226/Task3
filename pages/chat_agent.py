@@ -20,27 +20,31 @@ def show():
     st.markdown("""
 <style>
     .chat-container { max-width: 800px; margin: 0 auto; padding: 0 1rem; }
-    .stChatMessage { border-radius: 16px; padding: 0.75rem 1rem; }
-    [data-testid="stChatMessageContent"] {
-        font-size: 1rem; line-height: 1.6;
-    }
     .rtl-text { direction: rtl; text-align: right; font-family: 'Cairo', sans-serif; }
     .ltr-text { direction: ltr; text-align: left; }
     div[data-testid="InputInstructions"] { display: none; }
-    .stChatInputContainer { border-radius: 24px; border: 2px solid #1E3A5F; }
-    .st-emotion-cache-janbn0 { border-radius: 24px; }
+    .stChatInputContainer { border-radius: 24px !important; border: 2px solid #1E3A5F !important; }
+    .st-emotion-cache-janbn0 { border-radius: 24px !important; }
     .user-bubble {
-        background: linear-gradient(135deg, #1E3A5F 0%, #2A5298 100%);
-        color: white; border-radius: 20px 20px 5px 20px;
-        padding: 12px 18px; margin: 8px 0; max-width: 85%;
-        float: right; clear: both;
+        background: linear-gradient(135deg, #1E3A5F 0%, #2A5298 100%) !important;
+        color: #FFFFFF !important;
+        border-radius: 20px 20px 5px 20px !important;
+        padding: 12px 18px !important; margin: 8px 0 !important;
+        max-width: 85% !important; float: right !important; clear: both !important;
+        font-size: 1rem !important; line-height: 1.6 !important;
     }
+    .user-bubble * { color: #FFFFFF !important; }
     .assistant-bubble {
-        background: white; border: 1px solid #E0E7EF; border-radius: 20px 20px 20px 5px;
-        padding: 12px 18px; margin: 8px 0; max-width: 85%;
-        float: left; clear: both; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        background: #F8FAFD !important;
+        color: #1A1A2E !important;
+        border: 1px solid #DEE2E9 !important;
+        border-radius: 20px 20px 20px 5px !important;
+        padding: 12px 18px !important; margin: 8px 0 !important;
+        max-width: 85% !important; float: left !important; clear: both !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+        font-size: 1rem !important; line-height: 1.6 !important;
     }
-    .chat-area { padding: 1rem 0; overflow-y: auto; }
+    .assistant-bubble * { color: #1A1A2E !important; }
     .clearfix::after { content: ""; display: table; clear: both; }
     .greeting-banner {
         background: linear-gradient(135deg, #E8F0FE 0%, #F0F4FF 100%);
@@ -49,16 +53,16 @@ def show():
     }
     .chat-footer {
         position: fixed; bottom: 0; left: 0; right: 0;
-        background: white; padding: 1rem 2rem; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-        z-index: 100;
+        background: #FFFFFF; padding: 1rem 2rem;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 100;
     }
     .chat-footer-inner { max-width: 800px; margin: 0 auto; }
     .stButton button[kind="secondary"] {
-        border-radius: 20px; font-size: 0.85rem; padding: 0.25rem 1rem;
+        border-radius: 20px !important; font-size: 0.85rem !important;
+        padding: 0.25rem 1rem !important;
     }
-    .quick-reply-btn { margin: 0.25rem; }
     @media (max-width: 768px) {
-        .user-bubble, .assistant-bubble { max-width: 95%; }
+        .user-bubble, .assistant-bubble { max-width: 95% !important; }
     }
 </style>
     """, unsafe_allow_html=True)

@@ -408,10 +408,11 @@ class SalesAgent:
     def _track_products(self, text: str) -> None:
         if not self.current_lead:
             return
-        all_texts = [text.lower()]
+        texts = [text.lower()]
         for m in self.conversation_history:
-            all_texts.append(m["content"].lower())
-        for t in all_texts:
+            if m["role"] == "user":
+                texts.append(m["content"].lower())
+        for t in texts:
             self._scan_text_for_products(t)
 
     def _scan_text_for_products(self, t: str) -> None:
