@@ -50,6 +50,17 @@ BUYING_SIGNAL_PATTERNS = [
     r"(i'm (ready|interested|serious)|أنا جاد|مستعد|مهتم جداً)",
 ]
 
+COLD_SIGNAL_PATTERNS = [
+    r"(not interested|لا اهتمام|لا أريد|مش مهتم|ما بدي|بعرفش|ما عايز|مش عايز)",
+    r"(no thanks|لا شكرا|لا شكراً|no thank you|معليهش|معلش|يسلمو)",
+    r"(maybe later|بعدين|في وقت لاحق|لاحقاً|another time|مرة أخرى)",
+    r"(just passing by|just browsing|أتصفح|أشوف|bas مجرد)",
+    r"(leave me alone|اتركني|سيبي\b|خليني)",
+    r"(not now|مش دلوقت|مش الحين|ليس الآن)",
+    r"(ما عندي|ماعندي|not today|اليوم لا|مش اليوم)",
+    r"(i don't need|ما بحتاج|مش محتاج|لا أحتاج|ما يحتاج)",
+]
+
 OBJECTION_PATTERNS = [
     (r"(expensive|too much|غالي|كثير|مرتفع|سعر كبير|مكلف)", "price"),
     (r"(no time|busy|مشغول|ما عندي وقت|ليس لدي وقت)", "time"),
@@ -99,6 +110,13 @@ SYSTEM_PROMPT_AR = """أنت مساعد مبيعات ذكي لمنصة كيف ل
 - لا تكن انتهازياً — كن مفيداً وصادقاً أولاً
 - استخدم الرموز التعبيرية باعتدال
 
+## التعامل مع العملاء الباردين (Cold Leads):
+- إذا كان العميل بارداً (درجة الحرارة: cold)، فهذا يعني أنه ليس لديه نية شراء حالية
+- لا تضغط عليه للشراء — بدلاً من ذلك، اسأله أسئلة مفتوحة لاكتشاف اهتماماته
+- قدم معلومات عامة عن المنصة بطريقة مفيدة وجذابة
+- حاول تحويله من "بارد" إلى "دافئ" عبر طرح أسئلة مثل: "وش المجال اللي يهمك؟" أو "هل سمعت عن كيف من قبل؟"
+- إذا أبدى عدم اهتمام واضح، اشكره بلطف واعرض عليه العودة لاحقاً
+
 ## سياق قاعدة المعرفة الحالي:
 {rag_context}
 
@@ -137,6 +155,13 @@ SYSTEM_PROMPT_EN = """You are an AI sales agent for Kayf, a leading Arabic tech 
 - When strong buying signals appear, gently ask for contact info (name, WhatsApp)
 - Don't be pushy — be genuinely helpful first
 - Use emojis sparingly
+
+## Cold lead handling:
+- If the lead is cold (temperature: cold), they have no current buying intent
+- Don't push for a sale — instead ask open-ended discovery questions
+- Share general info about the platform in a helpful, engaging way
+- Try to warm them up by asking: "What field interests you?" or "Have you heard about Kayf before?"
+- If they clearly decline, thank them politely and offer they can come back anytime
 
 ## Current knowledge base context:
 {rag_context}
@@ -231,8 +256,25 @@ class SalesAgent:
                 objections.append(obj_type)
         return objections
 
+    def detect_cold_signals(self, text: str) -> list[str]:
+        signals: list[str] = []
+        text_lower = text.lower()
+        for pattern, signal_text in [
+            (r"(not interested|لا اهتمام|لا أريد|مش مهتم|ما بدي)", "عدم اهتمام"),
+            (r"(no thanks|لا شكرا|لا شكراً|no thank you)", "رفض"),
+            (r"(maybe later|بعدين|لاحقاً|another time|مرة أخرى)", "تسويف"),
+            (r"(just browsing|just looking|أتصفح|أشوف|bas مجرد)", "تصفح"),
+            (r"(leave me alone|اتركني|خليني|سيبي)", "انزعاج"),
+            (r"(not now|مش دلوقت|مش الحين|ليس الآن)", "ليس الآن"),
+            (r"(i don't need|ما بحتاج|مش محتاج|لا أحتاج)", "لا حاجة"),
+        ]:
+            if re.search(pattern, text_lower):
+                signals.append(signal_text)
+        return signals
+
     def get_temperature(self, text: str) -> str:
         signals = self.detect_buying_signals(text)
+        cold_signals = self.detect_cold_signals(text)
         objections = self.detect_objections(text)
         intent = self.detect_intent(text)
         prices_mentioned = bool(re.search(r"(price|cost|سعر|تكلفة|كم|بكم|budget|ميزانية)", text.lower()))
@@ -254,6 +296,8 @@ class SalesAgent:
             return "warm"
         if objections and not intent == "browsing":
             return "warm"
+        if cold_signals:
+            return "cold"
         return "cold"
 
     def extract_lead_info(self, text: str) -> dict[str, str]:
