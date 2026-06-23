@@ -155,8 +155,9 @@ SYSTEM_PROMPT_AR = """أنت مساعد مبيعات ذكي لمنصة كيف ل
 - إذا قال "بعد أسبوع" → لا تسجل الآن، وذكّره إنك متاح لما يقرر
 - إذا تم تسجيل العميل كـ "hot lead"، أخبره أنه تم تسجيل بياناته.
 - **لا تذكر درجة الحرارة (temperature) للعميل أبداً** — لا تقل "warm lead" أو "hot lead" أو "cold lead" للعميل
-- **لا تستنتج أرقام هواتف من النص الخام** — استخدم فقط البيانات في "تم جمع المعلومات" (collected_info)
-- الأرقام القصيرة (أقل من 11 رقم) ليست أرقام هواتف صحيحة — تجاهلها"""
+- إذا أعطاك العميل رقماً غير صحيح (أقل من 11 رقم أو لا يبدأ بـ 01)، اطلب منه برفق إدخال رقم محمول مصري صحيح مكون من 11 رقم ويبدأ بـ 01
+- لا تخترع أرقام هواتف — استخدم فقط الأرقام الموجودة في "تم جمع المعلومات"
+- الأرقام القصيرة (أقل من 11 رقم) تعني أن العميل أخطأ في الإدخال — اطلب التصحيح"""
 
 
 SYSTEM_PROMPT_EN = """You are an AI sales agent for Kayf, a leading Arabic tech education platform. Kayf offers courses, tracks, and diplomas in technology fields like AI, cybersecurity, data science, and web development.
@@ -207,8 +208,9 @@ SYSTEM_PROMPT_EN = """You are an AI sales agent for Kayf, a leading Arabic tech 
 - If they say "after a week" → don't capture yet, let them know you're here when ready
 - If captured as hot lead, tell them their info has been saved
 - **Never mention temperature (warm/hot/cold) to the customer**
-- **Don't infer phone numbers from raw text** — only use data in "collected_info"
-- Short digit sequences (less than 11 digits) are not valid phone numbers — ignore them"""
+- If the customer shares an invalid phone number (less than 11 digits or doesn't start with 01), kindly ask them to provide a correct 11-digit Egyptian mobile number starting with 01
+- Don't fabricate phone numbers — only use numbers in "collected_info"
+- Short digit sequences mean the customer entered it wrong — ask for correction"""
 
 
 class SalesAgent:
@@ -221,6 +223,7 @@ class SalesAgent:
         self.collected_info: dict[str, str] = {}
         self.lead_captured_this_session: bool = False
         self.asked_timing: bool = False
+        self.invalid_phone_attempt: bool = False
 
     def detect_language(self, text: str) -> str:
         arabic_chars = len(re.findall(r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]", text))
@@ -390,6 +393,10 @@ class SalesAgent:
         if email_match and self.validate_email(email_match.group(0)):
             info["email"] = email_match.group(0)
 
+        # Detect invalid phone attempts (digits that look like a phone but aren't valid)
+        phone_attempt = re.search(r"(?<!\w)01\d{2,8}(?!\w)", text)
+        self.invalid_phone_attempt = bool(phone_attempt) and "phone" not in info
+
         known_locations = ["مصر", "السعودية", "الأردن", "سوريا", "الإمارات", "ليبيا",
                            "تونس", "الجزائر", "المغرب", "فلسطين", "العراق", "السودان",
                            "اليمن", "عمان", "البحرين", "الكويت", "قطر", "لبنان"]
@@ -417,6 +424,7 @@ class SalesAgent:
         objections = self.detect_objections(user_input)
         timing = self.detect_timing(user_input)
         temperature = self.get_temperature(user_input)
+        self.invalid_phone_attempt = False
         lead_info = self.extract_lead_info(user_input)
 
         # If customer says "now", mark as warm
@@ -432,6 +440,12 @@ class SalesAgent:
         self.conversation_history.append({"role": "user", "content": clean_input})
 
         context = self.retriever.retrieve_context(clean_input)
+
+        # If user tried an invalid phone, tell the LLM to ask for correction
+        if self.invalid_phone_attempt:
+            note_ar = "\n\n**ملاحظة:** العميل أدخل رقماً غير صحيح. اطلب منه رقم محمول مصري صحيح مكون من 11 رقم ويبدأ بـ 01."
+            note_en = "\n\n**Note:** The customer entered an invalid phone number. Ask them for a correct 11-digit Egyptian mobile number starting with 01."
+            context += note_ar if lang == "ar" else note_en
 
         if self.current_lead is None:
             if temperature in ("hot", "warm") or lead_info.get("name") or lead_info.get("phone") or buying_signals:

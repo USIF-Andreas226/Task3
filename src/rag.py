@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import difflib
 from pathlib import Path
 from typing import Any
 
@@ -81,13 +82,23 @@ class KnowledgeBase:
         results = list(self.roadmaps)
         if query:
             q = query.lower()
-            results = [
-                r
-                for r in results
-                if q in r["name"].lower()
-                or q in r.get("track", "").lower()
-                or q in " ".join(r.get("skills", [])).lower()
-            ]
+            q_words = set(q.split())
+            scored: list[tuple[float, dict[str, Any]]] = []
+            for r in results:
+                score = 0.0
+                text = (r["name"] + " " + r.get("track", "") + " " + " ".join(r.get("skills", []))).lower()
+                if q in text:
+                    score += 3.0
+                for w in q_words:
+                    if w in text:
+                        score += 1.0
+                    else:
+                        fuzz = self._fuzzy_token_score(w, text)
+                        if fuzz > 0:
+                            score += fuzz * 0.6
+                scored.append((score, r))
+            scored.sort(key=lambda x: x[0], reverse=True)
+            results = [r for s, r in scored if s > 0]
         if track:
             results = [r for r in results if r.get("track", "").lower() == track.lower()]
         if roadmap_type:
@@ -117,6 +128,16 @@ class KnowledgeBase:
     def get_markdown_doc(self, name: str) -> str | None:
         return self.markdown_docs.get(name)
 
+    def _fuzzy_token_score(self, token: str, text: str, threshold: float = 0.6) -> float:
+        text_lower = text.lower()
+        if token in text_lower:
+            return 1.0
+        for word in text_lower.split():
+            ratio = difflib.SequenceMatcher(None, token, word).ratio()
+            if ratio >= threshold:
+                return ratio
+        return 0.0
+
     def semantic_search_courses(self, query: str, top_k: int = 5) -> list[dict[str, Any]]:
         q = query.lower()
         q_words = set(q.split())
@@ -129,6 +150,10 @@ class KnowledgeBase:
             for w in q_words:
                 if w in text:
                     score += 1.0
+                else:
+                    fuzz = self._fuzzy_token_score(w, text)
+                    if fuzz > 0:
+                        score += fuzz * 0.6
                 if w in c["name"].lower():
                     score += 2.0
                 if w in c["track"].lower():

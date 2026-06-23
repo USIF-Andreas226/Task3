@@ -16,6 +16,7 @@ def initialize_session():
 
 def show():
     initialize_session()
+    _process_pending()
 
     st.markdown("""
 <style>
@@ -152,15 +153,26 @@ def show():
 
 
 def _handle_user_input(text: str):
-    if not text.strip():
+    text = text.strip()
+    if not text:
         return
 
-    st.session_state.messages.append({"role": "user", "content": text.strip()})
+    st.session_state.messages.append({"role": "user", "content": text})
+    st.session_state.pending_response = True
+    st.rerun()
+
+
+def _process_pending():
+    if not st.session_state.get("pending_response"):
+        return
+    st.session_state.pending_response = False
+
+    last = st.session_state.messages[-1] if st.session_state.messages else None
+    if not last or last["role"] != "user":
+        return
 
     agent: SalesAgent = st.session_state.agent
-    with st.spinner("جارٍ التفكير..." if any("\u0600" <= c <= "\u06FF" for c in text) else "Thinking..."):
-        response = agent.generate_response(text.strip())
-
+    with st.spinner("جارٍ التفكير..." if any("\u0600" <= c <= "\u06FF" for c in last["content"]) else "Thinking..."):
+        response = agent.generate_response(last["content"])
     st.session_state.messages.append({"role": "assistant", "content": response})
-
     st.rerun()
