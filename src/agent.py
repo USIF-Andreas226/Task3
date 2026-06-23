@@ -7,6 +7,7 @@ from typing import Any
 from openai import OpenAI
 
 from src.rag import KnowledgeBase, RAGRetriever
+from pydantic import EmailStr
 from src.crm import CRMClient, CRMTicket, LeadInfo, ProductsOfInterest, LeadAssessment
 
 # Set up logging for debugging
@@ -48,6 +49,16 @@ BUYING_SIGNAL_PATTERNS = [
     r"(discount|خصم|تخفيض|عرض)",
     r"(certificate|شهادة|معتمدة|accredited|معترف)",
     r"(i'm (ready|interested|serious)|أنا جاد|مستعد|مهتم جداً)",
+]
+
+TIMING_NOW_PATTERNS = [
+    r"\b(الآن|دلوقتي|دلوقت|الحين|now|حالاً|فوراً|this week|هذا الأسبوع|اليوم|today|اقصد|قصدي)\b",
+    r"\b(سجلني|سجّلني|عايز اسجل|بدي سجل|أريد التسجيل|ابغى اسجل)\b",
+]
+
+TIMING_LATER_PATTERNS = [
+    r"\b(بعد أسبوع|بعدين|later|next week|الأسبوع الجاي|week|أسبوع|شهر|month)\b",
+    r"\b(مش دلوقت|مش الحين|مش الآن|ليس الآن|not now)\b",
 ]
 
 COLD_SIGNAL_PATTERNS = [
@@ -138,6 +149,9 @@ SYSTEM_PROMPT_AR = """أنت مساعد مبيعات ذكي لمنصة كيف ل
 - إذا كان العميل يتحدث بلهجة معينة، حاول محاكاتها
 - كن مقنعاً ولكن ليس انتهازياً
 - عند طلب التسجيل، اطلب المعلومات بلطف
+- بعد جمع الاسم ورقم الهاتف، اسأل: "حابب تسجل دلوقتي ولا بعد أسبوع؟"
+- إذا قال "دلوقتي" أو "الآن" → سجله كـ warm lead
+- إذا قال "بعد أسبوع" → لا تسجل الآن، وذكّره إنك متاح لما يقرر
 - إذا تم تسجيل العميل كـ "hot lead"، أخبره أنه تم تسجيل بياناته."""
 
 
@@ -183,6 +197,9 @@ SYSTEM_PROMPT_EN = """You are an AI sales agent for Kayf, a leading Arabic tech 
 - Use the same language as the customer
 - Be persuasive but not pushy
 - When they want to enroll, gently ask for their info
+- After collecting name and phone, ask: "Would you like to enroll now or after a week?"
+- If they say "now" → mark as warm lead
+- If they say "after a week" → don't capture yet, let them know you're here when ready
 - If captured as hot lead, tell them their info has been saved"""
 
 
@@ -195,6 +212,7 @@ class SalesAgent:
         self.current_lead: CRMTicket | None = None
         self.collected_info: dict[str, str] = {}
         self.lead_captured_this_session: bool = False
+        self.asked_timing: bool = False
 
     def detect_language(self, text: str) -> str:
         arabic_chars = len(re.findall(r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]", text))
@@ -272,6 +290,21 @@ class SalesAgent:
                 signals.append(signal_text)
         return signals
 
+    def detect_timing(self, text: str) -> str | None:
+        text_lower = text.lower()
+        if any(re.search(p, text_lower) for p in TIMING_NOW_PATTERNS):
+            return "now"
+        if any(re.search(p, text_lower) for p in TIMING_LATER_PATTERNS):
+            return "later"
+        return None
+
+    def validate_email(self, email: str) -> bool:
+        try:
+            EmailStr._validate(email)
+            return True
+        except Exception:
+            return False
+
     def get_temperature(self, text: str) -> str:
         signals = self.detect_buying_signals(text)
         cold_signals = self.detect_cold_signals(text)
@@ -334,19 +367,19 @@ class SalesAgent:
             if m:
                 phone = m.group(1).strip()
                 digits = re.sub(r"\D", "", phone)
-                if 7 <= len(digits) <= 15:
-                    info["phone"] = phone
+                if len(digits) == 11 and digits.startswith("01"):
+                    info["phone"] = digits
                     break
 
         if "phone" not in info:
             phone_match = re.search(r"(?<!\w)(\+?\d[\d\s\-\(\)]{7,14})(?!\w)", text)
             if phone_match:
                 digits = re.sub(r"\D", "", phone_match.group(1))
-                if 7 <= len(digits) <= 15:
-                    info["phone"] = phone_match.group(1).strip()
+                if len(digits) == 11 and digits.startswith("01"):
+                    info["phone"] = digits
 
         email_match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text)
-        if email_match:
+        if email_match and self.validate_email(email_match.group(0)):
             info["email"] = email_match.group(0)
 
         known_locations = ["مصر", "السعودية", "الأردن", "سوريا", "الإمارات", "ليبيا",
@@ -366,8 +399,17 @@ class SalesAgent:
         intent = self.detect_intent(user_input)
         buying_signals = self.detect_buying_signals(user_input)
         objections = self.detect_objections(user_input)
+        timing = self.detect_timing(user_input)
         temperature = self.get_temperature(user_input)
         lead_info = self.extract_lead_info(user_input)
+
+        # If customer says "now", mark as warm
+        if timing == "now":
+            temperature = max([temperature, "warm"], key=lambda t: {"cold": 0, "warm": 1, "hot": 2}[t])
+
+        # If timing explicitly "later", keep cool — don't capture yet
+        if timing == "later":
+            self.asked_timing = True
 
         self.conversation_history.append({"role": "user", "content": user_input})
 
@@ -413,7 +455,7 @@ class SalesAgent:
         self.conversation_history.append({"role": "assistant", "content": response})
 
         should_capture = False
-        if self.current_lead and not self.lead_captured_this_session:
+        if self.current_lead and not self.lead_captured_this_session and not self.asked_timing:
             nm = self.current_lead.lead.name
             ph = self.current_lead.lead.phone
             temp = self.current_lead.assessment.temperature
@@ -425,7 +467,7 @@ class SalesAgent:
                 if nm_lower in _bad_names or any(b in nm_lower for b in ["عنديش", "ماعند", "عايز", "بدي"]):
                     nm = None
                     self.current_lead.lead.name = None
-            has_name_phone = bool(nm and ph and len(nm) > 1 and len(re.sub(r"\D", "", ph or "")) >= 7)
+            has_name_phone = bool(nm and ph and len(nm) > 1 and len(re.sub(r"\D", "", ph or "")) == 11 and ph.startswith("01"))
             has_contact = bool(lead_info.get("phone") or lead_info.get("name"))
             if has_name_phone:
                 should_capture = True

@@ -26,9 +26,9 @@ class LeadInfo(BaseModel):
         default=None,
         description="الاسم الكامل للعميل كما أدخله في المحادثة"
     )
-    phone: Annotated[str, Field(min_length=7, max_length=20, pattern=r"^\+?[\d\s\-\(\)]+$")] | None = Field(
+    phone: Annotated[str, Field(min_length=11, max_length=11, pattern=r"^01\d{9}$")] | None = Field(
         default=None,
-        description="رقم الواتساب أو الموبايل للتواصل"
+        description="رقم المحمول المصري: 01 متبوعاً بـ 9 أرقام"
     )
     email: EmailStr | None = Field(
         default=None,
