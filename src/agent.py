@@ -399,6 +399,14 @@ class SalesAgent:
         self.collected_info.update(info)
         return info
 
+    def sanitize_input(self, text: str) -> str:
+        def _replace(m: re.Match) -> str:
+            digits = re.sub(r"\D", "", m.group(0))
+            if len(digits) == 11 and digits.startswith("01"):
+                return m.group(0)
+            return ""
+        return re.sub(r"(?<!\w)\+?\d[\d\s\-\(\)]{3,13}(?!\w)", _replace, text).strip()
+
     def generate_response(self, user_input: str) -> str:
         lang = self.detect_language(user_input)
         dialect = self.detect_dialect(user_input)
@@ -417,9 +425,11 @@ class SalesAgent:
         if timing == "later":
             self.asked_timing = True
 
-        self.conversation_history.append({"role": "user", "content": user_input})
+        # Strip invalid phone numbers from LLM-facing text so it never hallucinates them
+        clean_input = self.sanitize_input(user_input)
+        self.conversation_history.append({"role": "user", "content": clean_input})
 
-        context = self.retriever.retrieve_context(user_input)
+        context = self.retriever.retrieve_context(clean_input)
 
         if self.current_lead is None:
             if temperature in ("hot", "warm") or lead_info.get("name") or lead_info.get("phone") or buying_signals:
@@ -454,7 +464,7 @@ class SalesAgent:
             self._track_products(user_input)
 
         response = self._llm_response(
-            user_input, lang, dialect, intent, temperature,
+            clean_input, lang, dialect, intent, temperature,
             buying_signals, objections, context
         )
 
