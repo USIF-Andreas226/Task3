@@ -2,8 +2,9 @@ import os
 import json
 from datetime import datetime
 from typing import Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, EmailStr
 from dotenv import load_dotenv
+from typing import Literal, Annotated
 
 load_dotenv()
 
@@ -21,43 +22,134 @@ MONGO_COLLECTION = os.environ.get("MONGO_COLLECTION", "tickets")
 
 
 class LeadInfo(BaseModel):
-    name: str | None = None
-    phone: str | None = None
-    email: str | None = None
-    city: str | None = None
-    language: str | None = None
-    dialect: str | None = None
-    contact_channel: str | None = None
-    contact_time: str | None = None
+    name: Annotated[str, Field(min_length=2, max_length=60)] | None = Field(
+        default=None,
+        description="الاسم الكامل للعميل كما أدخله في المحادثة"
+    )
+    phone: Annotated[str, Field(min_length=7, max_length=20, pattern=r"^\+?[\d\s\-\(\)]+$")] | None = Field(
+        default=None,
+        description="رقم الواتساب أو الموبايل للتواصل"
+    )
+    email: EmailStr | None = Field(
+        default=None,
+        description="البريد الإلكتروني إن وُجد"
+    )
+    city: str | None = Field(
+        default=None,
+        description="الدولة أو المدينة المستخرجة من المحادثة"
+    )
+    language: Literal["Arabic", "English"] | None = Field(
+        default=None,
+        description="لغة المحادثة: Arabic أو English"
+    )
+    dialect: Literal["egyptian", "saudi", "syrian", "standard"] | None = Field(
+        default=None,
+        description="اللهجة المكتشفة"
+    )
+    contact_channel: Literal["whatsapp", "email", "call"] | None = Field(
+        default=None,
+        description="القناة المفضلة للتواصل"
+    )
+    contact_time: str | None = Field(
+        default=None,
+        description="الوقت المفضل للتواصل إن ذُكر"
+    )
 
 
 class ProductsOfInterest(BaseModel):
-    courses: list[str] = Field(default_factory=list)
-    tracks: list[str] = Field(default_factory=list)
-    diplomas: list[str] = Field(default_factory=list)
-    goal: str | None = None
-    current_level: str | None = None
-    prerequisites_discussed: str | None = None
+    courses: Annotated[list[str], Field(max_length=20)] = Field(
+        default_factory=list,
+        description="أسماء الدورات الفردية"
+    )
+    tracks: Annotated[list[str], Field(max_length=10)] = Field(
+        default_factory=list,
+        description="أسماء المسارات التعليمية"
+    )
+    diplomas: Annotated[list[str], Field(max_length=5)] = Field(
+        default_factory=list,
+        description="أسماء الدبلومات المباشرة"
+    )
+    goal: Annotated[str, Field(max_length=200)] | None = Field(
+        default=None,
+        description="الهدف التعليمي للعميل"
+    )
+    current_level: Literal["beginner", "intermediate", "advanced"] | None = Field(
+        default=None,
+        description="المستوى الحالي للعميل"
+    )
+    prerequisites_discussed: Annotated[str, Field(max_length=500)] | None = Field(
+        default=None,
+        description="ملاحظات حول المتطلبات المسبقة"
+    )
 
 
 class LeadAssessment(BaseModel):
-    temperature: str = "cold"
-    buying_signals: list[str] = Field(default_factory=list)
-    budget_sensitivity: str | None = None
-    objections: list[str] = Field(default_factory=list)
-    intent: str = "browsing"
-    goal: str | None = None
+    temperature: Literal["cold", "warm", "hot"] = Field(
+        default="cold",
+        description="مستوى جاهزية العميل للشراء"
+    )
+    buying_signals: Annotated[list[str], Field(max_length=20)] = Field(
+        default_factory=list,
+        description="إشارات الشراء المكتشفة"
+    )
+    budget_sensitivity: Literal["sensitive", "neutral", "not_sensitive"] | None = Field(
+        default=None,
+        description="مدى حساسية العميل للسعر"
+    )
+    objections: Annotated[
+        list[Literal["price", "time", "experience", "trust", "refund", "comparison"]],
+        Field(max_length=10)
+    ] = Field(
+        default_factory=list,
+        description="الاعتراضات المكتشفة"
+    )
+    intent: Literal["browsing", "comparing", "price_sensitive", "hesitant", "ready_to_enroll"] = Field(
+        default="browsing",
+        description="نية العميل"
+    )
+    goal: Annotated[str, Field(max_length=200)] | None = Field(
+        default=None,
+        description="الهدف المستخرج من المحادثة"
+    )
 
 
 class CRMTicket(BaseModel):
-    lead: LeadInfo = Field(default_factory=LeadInfo)
-    products: ProductsOfInterest = Field(default_factory=ProductsOfInterest)
-    assessment: LeadAssessment = Field(default_factory=LeadAssessment)
-    conversation_summary: str = ""
-    recommended_action: str = ""
-    timestamp: str = Field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d %H:%M"))
-    ticket_id: str | None = None
+    lead: LeadInfo = Field(
+        default_factory=LeadInfo,
+        description="بيانات العميل الشخصية"
+    )
+    products: ProductsOfInterest = Field(
+        default_factory=ProductsOfInterest,
+        description="المنتجات التي أبدى اهتمامًا بها"
+    )
+    assessment: LeadAssessment = Field(
+        default_factory=LeadAssessment,
+        description="تقييم العميل"
+    )
+    conversation_summary: Annotated[str, Field(max_length=2000)] = Field(
+        default="",
+        description="ملخص تلقائي للمحادثة"
+    )
+    recommended_action: Annotated[str, Field(max_length=500)] = Field(
+        default="",
+        description="الإجراء الموصى به لفريق المبيعات"
+    )
+    timestamp: str = Field(
+        default_factory=lambda: datetime.now().strftime("%Y-%m-%d %H:%M"),
+        description="وقت إنشاء التذكرة"
+    )
+    ticket_id: Annotated[
+        str, Field(pattern=r"^LEAD-\d{4}-\d{4}$")
+    ] | None = Field(
+        default=None,
+        description="المعرف الفريد للتذكرة بصيغة LEAD-2026-XXXX"
+    )
 
+    @field_validator("timestamp")
+    @classmethod
+    def validate_timestamp(cls, v: str) -> str:
+        datetime.strptime(v, "%Y-%m-%d %H:%M")  # يرمي ValueError لو الـ format غلط
+        return v
 
 class CRMClient:
     def __init__(self) -> None:
