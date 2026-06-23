@@ -458,6 +458,7 @@ class SalesAgent:
         if self.current_lead and not self.lead_captured_this_session and not self.asked_timing:
             nm = self.current_lead.lead.name
             ph = self.current_lead.lead.phone
+            em = self.current_lead.lead.email
             temp = self.current_lead.assessment.temperature
             if nm:
                 nm_lower = nm.lower().strip()
@@ -467,11 +468,18 @@ class SalesAgent:
                 if nm_lower in _bad_names or any(b in nm_lower for b in ["عنديش", "ماعند", "عايز", "بدي"]):
                     nm = None
                     self.current_lead.lead.name = None
-            has_name_phone = bool(nm and ph and len(nm) > 1 and len(re.sub(r"\D", "", ph or "")) == 11 and ph.startswith("01"))
+            # Validate phone if present: must be 11 digits starting with 01
+            phone_valid = ph and len(re.sub(r"\D", "", ph)) == 11 and ph.startswith("01")
+            # Validate email if present
+            email_valid = not em or self.validate_email(em)
+            if not email_valid:
+                self.current_lead.lead.email = None
+                em = None
+            has_name_phone = bool(nm and phone_valid and len(nm) > 1)
             has_contact = bool(lead_info.get("phone") or lead_info.get("name"))
             if has_name_phone:
                 should_capture = True
-            elif temp == "hot" and (nm or ph or has_contact):
+            elif temp == "hot" and (nm or ph or has_contact) and phone_valid:
                 should_capture = True
 
         if should_capture:
