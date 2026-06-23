@@ -16,7 +16,6 @@ def initialize_session():
 
 def show():
     initialize_session()
-    _process_pending()
 
     st.markdown("""
 <style>
@@ -126,6 +125,9 @@ def show():
     st.markdown('<div style="height:100px;"></div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
+    # Now generate response for pending user message (if any)
+    _generate_response()
+
     col1, col2, col3 = st.columns([1, 3, 1])
     with col2:
         quick_topics = [
@@ -156,19 +158,20 @@ def _handle_user_input(text: str):
     text = text.strip()
     if not text:
         return
-
     st.session_state.messages.append({"role": "user", "content": text})
     st.session_state.pending_response = True
-    st.rerun()
 
 
-def _process_pending():
+def _generate_response():
+    """Generate LLM response for the last user message if pending."""
     if not st.session_state.get("pending_response"):
         return
     st.session_state.pending_response = False
 
-    last = st.session_state.messages[-1] if st.session_state.messages else None
-    if not last or last["role"] != "user":
+    if not st.session_state.messages:
+        return
+    last = st.session_state.messages[-1]
+    if last["role"] != "user":
         return
 
     agent: SalesAgent = st.session_state.agent

@@ -5,6 +5,30 @@ import difflib
 from pathlib import Path
 from typing import Any
 
+AR_EN_MAP = {
+    "فول ستاك": "full stack", "full stack": "full stack",
+    "تطوير ويب": "web development", "تطوير": "web development", "ويب": "web development",
+    "ذكاء اصطناعي": "artificial intelligence", "ai": "artificial intelligence", "ذكاء": "artificial intelligence",
+    "أمن سيبراني": "cybersecurity", "سيبراني": "cybersecurity", "أمن": "cybersecurity",
+    "اختراق": "penetration testing", "هكر": "penetration testing",
+    "بيانات": "data science", "علوم بيانات": "data science",
+    "برمجة": "programming", "برمجه": "programming", "بايثون": "python", "بيثون": "python",
+    "تطبيقات": "mobile development", "موبايل": "mobile development", "جوال": "mobile development",
+    "سحابة": "cloud computing", "سحابي": "cloud computing", "cloud": "cloud computing",
+    "شبكات": "networking", "نتورك": "networking",
+    "قواعد بيانات": "database", "database": "database",
+    "دبلوم": "diploma", "دبلومة": "diploma",
+    "مسار": "track", "track": "track",
+    "دورة": "course", "كورس": "course", "كورسات": "course",
+    "سعر": "price", "سعره": "price", "سعرها": "price", "التكلفة": "price",
+    "مدة": "duration", "المدة": "duration",
+    "مبتدئ": "beginner", "beginner": "beginner", "مبتدئين": "beginner",
+    "متوسط": "intermediate", "intermediate": "intermediate",
+    "متقدم": "advanced", "advanced": "advanced",
+    "مجاني": "free", "free": "free",
+    "مدفوع": "paid", "paid": "paid",
+}
+
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 
@@ -81,7 +105,7 @@ class KnowledgeBase:
     ) -> list[dict[str, Any]]:
         results = list(self.roadmaps)
         if query:
-            q = query.lower()
+            q = self._expand_query(query.lower())
             q_words = set(q.split())
             scored: list[tuple[float, dict[str, Any]]] = []
             for r in results:
@@ -128,6 +152,16 @@ class KnowledgeBase:
     def get_markdown_doc(self, name: str) -> str | None:
         return self.markdown_docs.get(name)
 
+    def _expand_query(self, query: str) -> str:
+        q = query.lower()
+        expanded = [q]
+        for arabic, english in AR_EN_MAP.items():
+            if arabic in q and english not in q:
+                expanded.append(english)
+            elif english in q and arabic not in q:
+                expanded.append(arabic)
+        return " ".join(expanded)
+
     def _fuzzy_token_score(self, token: str, text: str, threshold: float = 0.6) -> float:
         text_lower = text.lower()
         if token in text_lower:
@@ -139,7 +173,7 @@ class KnowledgeBase:
         return 0.0
 
     def semantic_search_courses(self, query: str, top_k: int = 5) -> list[dict[str, Any]]:
-        q = query.lower()
+        q = self._expand_query(query.lower())
         q_words = set(q.split())
         scored: list[tuple[float, dict[str, Any]]] = []
         for c in self.courses:
