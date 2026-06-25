@@ -52,7 +52,7 @@ BUYING_SIGNAL_PATTERNS = [
 ]
 
 TIMING_NOW_PATTERNS = [
-    r"\b(الآن|دلوقتي|دلوقت|الحين|now|حالاً|فوراً|اليوم|today|اقصد|قصدي)\b",
+    r"\b(الآن|الان|دلوقتي|دلوقت|الحين|now|حالاً|فوراً|اليوم|today|اقصد|قصدي)\b",
     r"\b(سجلني|سجّلني|عايز اسجل|بدي سجل|أريد التسجيل|ابغى اسجل|خلص|جهز)\b",
 ]
 
@@ -344,24 +344,19 @@ class SalesAgent:
         prices_mentioned = bool(re.search(r"(price|cost|سعر|تكلفة|كم|بكم|budget|ميزانية)", text.lower()))
         hot_signals = {"طلب تسجيل", "جاهز للتسجيل", "طلب تواصل"}
         has_hot_signal = any(s in hot_signals for s in signals)
-        if intent == "ready_to_enroll" and has_hot_signal:
+        # Prioritize hot signals
+        if has_hot_signal or (intent == "ready_to_enroll" and len(signals) >= 1):
             return "hot"
-        if intent == "ready_to_enroll":
-            return "hot"
-        if len(signals) >= 2:
-            return "hot"
-        if signals:
+        
+        # Then consider warm signals
+        if signals or intent == "comparing" or (intent == "price_sensitive" and not objections) or \
+           (prices_mentioned and intent not in ("browsing",)) or (objections and not intent == "browsing"):
             return "warm"
-        if intent == "comparing":
-            return "warm"
-        if intent == "price_sensitive" and not objections:
-            return "warm"
-        if prices_mentioned and intent not in ("browsing",):
-            return "warm"
-        if objections and not intent == "browsing":
-            return "warm"
+        
+        # Finally, cold signals
         if cold_signals:
             return "cold"
+            
         return "cold"
 
     def extract_lead_info(self, text: str) -> dict[str, str]:
@@ -497,8 +492,7 @@ class SalesAgent:
                 self.current_lead.assessment.temperature = temperature
             else:
                 self.current_lead.assessment.temperature = max(
-                    [stored_temp, temperature],
-                    key=lambda t: {"cold": 0, "warm": 1, "hot": 2}[t]
+                    [stored_temp, temperature], key=lambda t: {"cold": 0, "warm": 1, "hot": 2}[t]
                 )
             if intent != "browsing":
                 self.current_lead.assessment.intent = intent
@@ -581,8 +575,7 @@ class SalesAgent:
             return
         texts = [text.lower()]
         for m in self.conversation_history:
-            if m["role"] == "user":
-                texts.append(m["content"].lower())
+            texts.append(m["content"].lower())
         for t in texts:
             self._scan_text_for_products(t)
 
