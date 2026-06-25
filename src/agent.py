@@ -457,9 +457,11 @@ class SalesAgent:
             self.needs_timing = False
             self.asked_timing = True
         elif timing == "month":
+            temperature = "cold"
             self.needs_timing = False
             self.asked_timing = True
         elif timing == "later":
+            temperature = "cold"
             self.asked_timing = True
             self.needs_timing = False
 
@@ -488,10 +490,16 @@ class SalesAgent:
             for obj in objections:
                 if obj not in self.current_lead.assessment.objections:
                     self.current_lead.assessment.objections.append(obj)
-            self.current_lead.assessment.temperature = max(
-                [self.current_lead.assessment.temperature, temperature],
-                key=lambda t: {"cold": 0, "warm": 1, "hot": 2}[t]
-            )
+            stored_temp = self.current_lead.assessment.temperature
+            if timing in ("month", "later"):
+                self.current_lead.assessment.temperature = "cold"
+            elif timing is None:
+                self.current_lead.assessment.temperature = temperature
+            else:
+                self.current_lead.assessment.temperature = max(
+                    [stored_temp, temperature],
+                    key=lambda t: {"cold": 0, "warm": 1, "hot": 2}[t]
+                )
             if intent != "browsing":
                 self.current_lead.assessment.intent = intent
             if self.current_lead.products.goal:
