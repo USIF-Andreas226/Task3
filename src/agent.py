@@ -223,6 +223,7 @@ class SalesAgent:
         self.collected_info: dict[str, str] = {}
         self.lead_captured_this_session: bool = False
         self.asked_timing: bool = False
+        self.needs_timing: bool = False
         self.invalid_phone_attempt: bool = False
 
     def detect_language(self, text: str) -> str:
@@ -427,13 +428,16 @@ class SalesAgent:
         self.invalid_phone_attempt = False
         lead_info = self.extract_lead_info(user_input)
 
-        # If customer says "now", mark as warm
+        # If customer says "now", mark as warm and clear needs_timing
         if timing == "now":
             temperature = max([temperature, "warm"], key=lambda t: {"cold": 0, "warm": 1, "hot": 2}[t])
+            self.needs_timing = False
+            self.asked_timing = True
 
         # If timing explicitly "later", keep cool — don't capture yet
         if timing == "later":
             self.asked_timing = True
+            self.needs_timing = False
 
         # Strip invalid phone numbers from LLM-facing text so it never hallucinates them
         clean_input = self.sanitize_input(user_input)
@@ -486,8 +490,17 @@ class SalesAgent:
 
         self.conversation_history.append({"role": "assistant", "content": response})
 
+        # If LLM just asked the timing question, wait for answer before capturing
+        if not self.asked_timing and self.current_lead and self.current_lead.lead.name and self.current_lead.lead.phone:
+            timing_asked = re.search(
+                r"(حابب تسجل|تسجل دلوقتي|ولا بعد أسبوع|Would you like to enroll|now or after)",
+                response, re.IGNORECASE
+            )
+            if timing_asked:
+                self.needs_timing = True
+
         should_capture = False
-        if self.current_lead and not self.lead_captured_this_session and not self.asked_timing:
+        if self.current_lead and not self.lead_captured_this_session and not self.asked_timing and not self.needs_timing:
             nm = self.current_lead.lead.name
             ph = self.current_lead.lead.phone
             em = self.current_lead.lead.email
@@ -542,7 +555,7 @@ class SalesAgent:
             self._scan_text_for_products(t)
 
     def _scan_text_for_products(self, t: str) -> None:
-        t_norm = t.replace("-", " ").replace("_", " ")
+        t_norm = t.replace("-", " ").replace("_", " ").replace("\u2011", " ").replace("\u2013", " ").replace("\u2014", " ")
 
         rkeywords = ["full stack", "web dev", "data science", "data analytics",
                      "cyber", "soc", "pentest", "pen test", "ai", "devops", "python",
