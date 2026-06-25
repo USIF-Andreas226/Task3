@@ -29,12 +29,12 @@ def show():
             if last["role"] == "user":
                 agent: SalesAgent = st.session_state.agent
                 response = agent.generate_response(last["content"])
-                st.session_state.messages.append({"role": "assistant", "content": response})
+                st.session_state.messages = [*st.session_state.messages, {"role": "assistant", "content": response}]
 
     # --- Render all messages ---
     _render_ui()
 
-    # --- Step: collect_new → append user msg and queue LLM for next run ---
+    # --- Step: collect_new → queue LLM for next run ---
     if step == "collect_new":
         st.session_state.step = "respond"
 
@@ -42,9 +42,8 @@ def show():
     if prompt := st.chat_input("اكتب رسالتك هنا — Type your message here...", key="chat_input"):
         prompt = prompt.strip()
         if prompt:
-            st.session_state.messages.append({"role": "user", "content": prompt})
+            st.session_state.messages = [*st.session_state.messages, {"role": "user", "content": prompt}]
             st.session_state.step = "collect_new"
-            st.rerun()
 
 
 def _render_ui():
