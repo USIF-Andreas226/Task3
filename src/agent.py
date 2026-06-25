@@ -532,7 +532,7 @@ class SalesAgent:
                 self.needs_timing = True
 
         should_capture = False
-        if self.current_lead and not self.lead_captured_this_session and not self.asked_timing and not self.needs_timing and timing != "month":
+        if self.current_lead and not self.lead_captured_this_session and not self.needs_timing:
             nm = self.current_lead.lead.name
             ph = self.current_lead.lead.phone
             em = self.current_lead.lead.email
