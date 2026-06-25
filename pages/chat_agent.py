@@ -12,16 +12,18 @@ def initialize_session():
         st.session_state.crm = crm
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    if "step" not in st.session_state:
+        st.session_state.step = "input"
 
 
 def show():
     initialize_session()
 
-    # Phase 1: Render all current messages first (user sees them immediately)
-    _render_ui()
+    step = st.session_state.step
 
-    # Phase 2: Generate LLM response if queued (rendering already happened, user sees msg)
-    if st.session_state.pop("_generate", False):
+    # --- Step: respond → LLM call ---
+    if step == "respond":
+        st.session_state.step = "input"
         if st.session_state.messages:
             last = st.session_state.messages[-1]
             if last["role"] == "user":
@@ -29,12 +31,20 @@ def show():
                 response = agent.generate_response(last["content"])
                 st.session_state.messages.append({"role": "assistant", "content": response})
 
-    # Phase 3: Accept new input
+    # --- Render all messages ---
+    _render_ui()
+
+    # --- Step: collect_new → append user msg and queue LLM for next run ---
+    if step == "collect_new":
+        st.session_state.step = "respond"
+
+    # --- Accept new input ---
     if prompt := st.chat_input("اكتب رسالتك هنا — Type your message here...", key="chat_input"):
         prompt = prompt.strip()
         if prompt:
             st.session_state.messages.append({"role": "user", "content": prompt})
-            st.session_state._generate = True
+            st.session_state.step = "collect_new"
+            st.rerun()
 
 
 def _render_ui():
