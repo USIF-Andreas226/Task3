@@ -17,42 +17,9 @@ def initialize_session():
 def show():
     initialize_session()
 
-    st.markdown("""
-<style>
-    div[data-testid="InputInstructions"] { display: none; }
-    .stChatInputContainer { border-radius: 24px !important; border: 1px solid #2D3142 !important; background: #1A1D27 !important; }
-    .stChatInputContainer input { background: #1A1D27 !important; color: #E2E8F0 !important; }
-    .stChatFloatingInputContainer { bottom: 0; padding: 1rem 2rem; background: #0F1117; box-shadow: 0 -2px 10px rgba(0,0,0,0.3); }
-    div[data-testid="stChatMessage"] {
-        padding: 12px 18px !important; margin: 8px 0 !important;
-        max-width: 85% !important; font-size: 1rem !important; line-height: 1.7 !important;
-        border-radius: 20px !important;
-    }
-    div[data-testid="stChatMessage"][data-testid="stChatMessage"][aria-label="user"] {
-        background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%) !important;
-        color: #FFFFFF !important;
-        border-radius: 20px 20px 5px 20px !important;
-        margin-left: auto !important;
-    }
-    div[data-testid="stChatMessage"][aria-label="user"] * { color: #FFFFFF !important; }
-    div[data-testid="stChatMessage"][aria-label="assistant"] {
-        background: #1A1D27 !important; color: #E2E8F0 !important;
-        border: 1px solid #2D3142 !important;
-        border-radius: 20px 20px 20px 5px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
-    }
-    div[data-testid="stChatMessage"][aria-label="assistant"] * { color: #E2E8F0 !important; }
-    div[data-testid="stChatMessage"][aria-label="assistant"] strong { color: #93C5FD !important; }
-    .greeting-banner {
-        background: linear-gradient(135deg, #1E293B 0%, #1A1D27 100%);
-        border: 1px solid #2D3142; border-radius: 16px; padding: 2rem;
-        margin: 1rem auto; max-width: 700px; text-align: center;
-    }
-    .greeting-banner h4 { color: #93C5FD !important; }
-    .greeting-banner p { color: #94A3B8 !important; }
-</style>
-    """, unsafe_allow_html=True)
+    _render_css()
 
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     st.markdown(
         "<h3 style='text-align:center;color:#1E3A5F;margin-bottom:0;'>"
         "💬 تحدث مع مستشار كيف — Talk to Kayf Advisor</h3>",
@@ -73,25 +40,119 @@ def show():
             '<p style="color:#4A6FA5;">أنا مساعدك الشخصي. كيف أقدر أساعدك اليوم؟</p>'
             '<p style="color:#4A6FA5;font-size:0.9rem;">I\'m your personal assistant. How can I help you today?</p>'
         , unsafe_allow_html=True)
-    else:
-        for msg in st.session_state.messages:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
 
+    for msg in st.session_state.messages:
+        _render_bubble(msg["role"], msg["content"])
+
+    st.markdown('<div style="height:100px;"></div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Handle new input — renders user bubble BEFORE blocking LLM call
     if prompt := st.chat_input("اكتب رسالتك هنا — Type your message here..."):
         prompt = prompt.strip()
         if not prompt:
             return
 
         st.session_state.messages.append({"role": "user", "content": prompt})
+        _render_bubble("user", prompt)
 
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        with st.spinner("جارٍ التفكير..." if any("\u0600" <= c <= "\u06FF" for c in prompt) else "Thinking..."):
+            agent: SalesAgent = st.session_state.agent
+            response = agent.generate_response(prompt)
 
-        with st.chat_message("assistant"):
-            with st.spinner("جارٍ التفكير..." if any("\u0600" <= c <= "\u06FF" for c in prompt) else "Thinking..."):
-                agent: SalesAgent = st.session_state.agent
-                response = agent.generate_response(prompt)
-            st.markdown(response)
-
+        _render_bubble("assistant", response)
         st.session_state.messages.append({"role": "assistant", "content": response})
+
+    # Quick topic buttons
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        if st.button("💻 Web Development", key="qt_0", use_container_width=True):
+            _quick_topic("what web development courses do you have?")
+    with col2:
+        if st.button("🤖 AI & ML", key="qt_1", use_container_width=True):
+            _quick_topic("tell me about AI courses")
+    with col3:
+        if st.button("🔒 Cybersecurity", key="qt_2", use_container_width=True):
+            _quick_topic("what cybersecurity courses are available?")
+    with col4:
+        if st.button("📊 Data Science", key="qt_3", use_container_width=True):
+            _quick_topic("tell me about data science courses")
+
+
+def _quick_topic(text: str):
+    st.session_state.messages.append({"role": "user", "content": text})
+    agent: SalesAgent = st.session_state.agent
+    with st.spinner("جارٍ التفكير..." if any("\u0600" <= c <= "\u06FF" for c in text) else "Thinking..."):
+        response = agent.generate_response(text)
+    st.session_state.messages.append({"role": "assistant", "content": response})
+
+
+def _render_bubble(role: str, content: str):
+    is_ar = any("\u0600" <= c <= "\u06FF" for c in content)
+    bubble_class = "user-bubble" if role == "user" else "assistant-bubble"
+    dir_attr = "rtl-text" if is_ar else "ltr-text"
+    st.markdown(
+        f'<div class="{bubble_class} {dir_attr}">{content}</div><div class="clearfix"></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _render_css():
+    st.markdown("""
+<style>
+    .chat-container { max-width: 800px; margin: 0 auto; padding: 0 1rem; }
+    .rtl-text { direction: rtl; text-align: right; font-family: 'Cairo', sans-serif; }
+    .ltr-text { direction: ltr; text-align: left; }
+    div[data-testid="InputInstructions"] { display: none; }
+    .stChatInputContainer { border-radius: 24px !important; border: 1px solid #2D3142 !important; background: #1A1D27 !important; }
+    .st-emotion-cache-janbn0 { border-radius: 24px !important; }
+    .stChatInputContainer input { background: #1A1D27 !important; color: #E2E8F0 !important; }
+    .stChatFloatingInputContainer {
+        position: fixed !important; bottom: 0 !important;
+        background: #0F1117 !important; padding: 0.5rem 2rem !important;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.3) !important; z-index: 100 !important;
+    }
+    .stButton button[kind="secondary"] {
+        border-radius: 20px !important; font-size: 0.8rem !important;
+        background: #1A1D27 !important; color: #94A3B8 !important;
+        border: 1px solid #2D3142 !important;
+    }
+    .stButton button[kind="secondary"]:hover {
+        background: #242738 !important; color: #E2E8F0 !important;
+    }
+    .user-bubble {
+        background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%) !important;
+        color: #FFFFFF !important;
+        border-radius: 20px 20px 5px 20px !important;
+        padding: 12px 18px !important; margin: 8px 0 !important;
+        max-width: 85% !important; float: right !important; clear: both !important;
+        font-size: 1rem !important; line-height: 1.7 !important;
+        font-weight: 500 !important;
+    }
+    .user-bubble * { color: #FFFFFF !important; }
+    .assistant-bubble {
+        background: #1A1D27 !important;
+        color: #E2E8F0 !important;
+        border: 1px solid #2D3142 !important;
+        border-radius: 20px 20px 20px 5px !important;
+        padding: 12px 18px !important; margin: 8px 0 !important;
+        max-width: 85% !important; float: left !important; clear: both !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+        font-size: 1rem !important; line-height: 1.7 !important;
+        font-weight: 400 !important;
+    }
+    .assistant-bubble * { color: #E2E8F0 !important; }
+    .assistant-bubble strong { color: #93C5FD !important; font-weight: 700 !important; }
+    .clearfix::after { content: ""; display: table; clear: both; }
+    .greeting-banner {
+        background: linear-gradient(135deg, #1E293B 0%, #1A1D27 100%);
+        border: 1px solid #2D3142; border-radius: 16px; padding: 2rem;
+        margin: 1rem auto; max-width: 700px; text-align: center;
+    }
+    .greeting-banner h4 { color: #93C5FD !important; }
+    .greeting-banner p { color: #94A3B8 !important; }
+    @media (max-width: 768px) {
+        .user-bubble, .assistant-bubble { max-width: 95% !important; }
+    }
+</style>
+    """, unsafe_allow_html=True)
