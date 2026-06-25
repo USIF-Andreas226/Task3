@@ -8,7 +8,7 @@ from typing import Any
 AR_EN_MAP = {
     "فول ستاك": "full stack", "full stack": "full stack",
     "تطوير ويب": "web development", "تطوير": "web development", "ويب": "web development",
-    "ذكاء اصطناعي": "artificial intelligence", "ai": "artificial intelligence", "ذكاء": "artificial intelligence",
+    "ذكاء اصطناعي": "ai", "ذكاء": "ai", "اصطناعي": "ai", "artificial intelligence": "ai", "ai": "ai",
     "أمن سيبراني": "cybersecurity", "سيبراني": "cybersecurity", "أمن": "cybersecurity",
     "اختراق": "penetration testing", "هكر": "penetration testing",
     "بيانات": "data science", "علوم بيانات": "data science",

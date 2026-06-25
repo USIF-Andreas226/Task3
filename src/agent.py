@@ -52,12 +52,20 @@ BUYING_SIGNAL_PATTERNS = [
 ]
 
 TIMING_NOW_PATTERNS = [
-    r"\b(الآن|دلوقتي|دلوقت|الحين|now|حالاً|فوراً|this week|هذا الأسبوع|اليوم|today|اقصد|قصدي)\b",
-    r"\b(سجلني|سجّلني|عايز اسجل|بدي سجل|أريد التسجيل|ابغى اسجل)\b",
+    r"\b(الآن|دلوقتي|دلوقت|الحين|now|حالاً|فوراً|اليوم|today|اقصد|قصدي)\b",
+    r"\b(سجلني|سجّلني|عايز اسجل|بدي سجل|أريد التسجيل|ابغى اسجل|خلص|جهز)\b",
+]
+
+TIMING_WEEK_PATTERNS = [
+    r"\b(بعد أسبوع|الأسبوع الجاي|next week|week|أسبوع)\b",
+]
+
+TIMING_MONTH_PATTERNS = [
+    r"\b(بعد شهر|شهر|month|next month|الشهر الجاي)\b",
 ]
 
 TIMING_LATER_PATTERNS = [
-    r"\b(بعد أسبوع|بعدين|later|next week|الأسبوع الجاي|week|أسبوع|شهر|month)\b",
+    r"\b(بعدين|later|مرة أخرى|another time)\b",
     r"\b(مش دلوقت|مش الحين|مش الآن|ليس الآن|not now)\b",
 ]
 
@@ -118,6 +126,8 @@ SYSTEM_PROMPT_AR = """أنت مساعد مبيعات ذكي لمنصة كيف ل
 - **لا تضف دورات أو أسعاراً أو مسارات أو دبلومات غير موجودة في قاعدة المعرفة**
 - إذا لم تجد المعلومة في قاعدة المعرفة، قل "هذه المعلومة غير متوفرة لدي حالياً" ولا تخترعها
 - إذا سألك العميل عن شيء خارج مجال كيف، قل بلطف أنك متخصص في منتجات كيف واعرض المساعدة في مجال آخر
+- **اجمع الاسم ورقم الهاتف أولاً قبل تقديم أي تفاصيل عن الدورات أو الأسعار**
+- إذا أبدى العميل اهتماماً بدورة أو مسار، اطلب اسمه ورقم واتسابه أولاً ثم قدم التفاصيل
 - عند ظهور إشارات شراء قوية، اسأل عن معلومات التواصل (الاسم، رقم واتساب) بلطف
 - لا تكن انتهازياً — كن مفيداً وصادقاً أولاً
 - استخدم الرموز التعبيرية باعتدال
@@ -150,9 +160,11 @@ SYSTEM_PROMPT_AR = """أنت مساعد مبيعات ذكي لمنصة كيف ل
 - إذا كان العميل يتحدث بلهجة معينة، حاول محاكاتها
 - كن مقنعاً ولكن ليس انتهازياً
 - عند طلب التسجيل، اطلب المعلومات بلطف
-- بعد جمع الاسم ورقم الهاتف، اسأل: "حابب تسجل دلوقتي ولا بعد أسبوع؟"
-- إذا قال "دلوقتي" أو "الآن" → سجله كـ warm lead
-- إذا قال "بعد أسبوع" → لا تسجل الآن، وذكّره إنك متاح لما يقرر
+- بعد جمع الاسم ورقم الهاتف، اسأل: "حابب تسجل دلوقتي ولا بعد أسبوع ولا بعد شهر؟"
+- إذا قال "دلوقتي" أو "الآن" → lead حار (hot)
+- إذا قال "بعد أسبوع" → lead دافئ (warm)
+- إذا قال "بعد شهر" → lead بارد (cold)
+- لا تسجل العميل حتى تعرف إجابته على سؤال التوقيت
 - إذا تم تسجيل العميل كـ "hot lead"، أخبره أنه تم تسجيل بياناته.
 - **لا تذكر درجة الحرارة (temperature) للعميل أبداً** — لا تقل "warm lead" أو "hot lead" أو "cold lead" للعميل
 - إذا أعطاك العميل رقماً غير صحيح (أقل من 11 رقم أو لا يبدأ بـ 01)، اطلب منه برفق إدخال رقم محمول مصري صحيح مكون من 11 رقم ويبدأ بـ 01
@@ -203,9 +215,12 @@ SYSTEM_PROMPT_EN = """You are an AI sales agent for Kayf, a leading Arabic tech 
 - Use the same language as the customer
 - Be persuasive but not pushy
 - When they want to enroll, gently ask for their info
-- After collecting name and phone, ask: "Would you like to enroll now or after a week?"
-- If they say "now" → mark as warm lead
-- If they say "after a week" → don't capture yet, let them know you're here when ready
+- **Collect name and phone before giving any course/pricing details**
+- After collecting name and phone, ask: "Would you like to enroll now, after a week, or after a month?"
+- If they say "now" → hot lead
+- If they say "after a week" → warm lead
+- If they say "after a month" → cold lead
+- Don't capture until you know their timing preference
 - If captured as hot lead, tell them their info has been saved
 - **Never mention temperature (warm/hot/cold) to the customer**
 - If the customer shares an invalid phone number (less than 11 digits or doesn't start with 01), kindly ask them to provide a correct 11-digit Egyptian mobile number starting with 01
@@ -306,6 +321,10 @@ class SalesAgent:
         text_lower = text.lower()
         if any(re.search(p, text_lower) for p in TIMING_NOW_PATTERNS):
             return "now"
+        if any(re.search(p, text_lower) for p in TIMING_WEEK_PATTERNS):
+            return "week"
+        if any(re.search(p, text_lower) for p in TIMING_MONTH_PATTERNS):
+            return "month"
         if any(re.search(p, text_lower) for p in TIMING_LATER_PATTERNS):
             return "later"
         return None
@@ -428,14 +447,19 @@ class SalesAgent:
         self.invalid_phone_attempt = False
         lead_info = self.extract_lead_info(user_input)
 
-        # If customer says "now", mark as warm and clear needs_timing
+        # Timing-based temperature: now=hot, week=warm, month=cold, later=no capture
         if timing == "now":
+            temperature = max([temperature, "hot"], key=lambda t: {"cold": 0, "warm": 1, "hot": 2}[t])
+            self.needs_timing = False
+            self.asked_timing = True
+        elif timing == "week":
             temperature = max([temperature, "warm"], key=lambda t: {"cold": 0, "warm": 1, "hot": 2}[t])
             self.needs_timing = False
             self.asked_timing = True
-
-        # If timing explicitly "later", keep cool — don't capture yet
-        if timing == "later":
+        elif timing == "month":
+            self.needs_timing = False
+            self.asked_timing = True
+        elif timing == "later":
             self.asked_timing = True
             self.needs_timing = False
 
@@ -500,7 +524,7 @@ class SalesAgent:
                 self.needs_timing = True
 
         should_capture = False
-        if self.current_lead and not self.lead_captured_this_session and not self.asked_timing and not self.needs_timing:
+        if self.current_lead and not self.lead_captured_this_session and not self.asked_timing and not self.needs_timing and timing != "month":
             nm = self.current_lead.lead.name
             ph = self.current_lead.lead.phone
             em = self.current_lead.lead.email
