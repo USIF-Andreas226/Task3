@@ -17,7 +17,7 @@ from src.pricing import calculate_llm_cost
 logger = logging.getLogger(__name__)
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 # Fast, cheap model dedicated to classification — always llama-3.1-8b-instant
 GROQ_CLASSIFIER_MODEL = "llama-3.1-8b-instant"
 
@@ -280,18 +280,37 @@ class SalesAgent:
     # to their own patterns only if the LLM call fails.
     # ──────────────────────────────────────────────────────────────────────────
     def _classify_with_llm(self, text: str) -> dict:
-        """Single fast LLM call that classifies everything at once.
+        """Single fast LLM call that classifies everything at once, including customer interests
+        and rejected interests based on the conversation history and customer agreement/rejection.
         Returns a dict with keys:
           language, dialect, intent, temperature, buying_signals,
-          objections, timing, payment_methods, has_phone, name
+          objections, timing, payment_methods, has_phone, name, interests, rejected_interests
         """
         if text == self._last_classified_text and self._last_classification:
             return self._last_classification  # cache hit
 
-        CLASSIFIER_SYSTEM = """You are a multilingual sales signal classifier for Kayf, an Arabic tech education platform.
-Analyze the customer message and return ONLY a valid JSON object with these fields:
+        # Get dynamic lists of courses and roadmaps to insert into the system prompt
+        roadmaps_list = []
+        for r in self.kb.roadmaps:
+            rtype = "diploma" if r.get("type") == "live" else "track"
+            roadmaps_list.append(f"- {r['name']} ({rtype})")
+        
+        courses_list = [f"- {c['name']}" for c in self.kb.courses]
+        
+        roadmaps_str = "\n".join(roadmaps_list)
+        courses_str = "\n".join(courses_list)
 
-{
+        # Build recent conversation history for context
+        recent_history = self.conversation_history[-6:] if self.conversation_history else []
+        history_str = "\n".join(
+            f"{'Customer' if m['role'] == 'user' else 'Assistant'}: {m['content']}"
+            for m in recent_history
+        )
+
+        CLASSIFIER_SYSTEM = f"""You are a multilingual sales signal classifier for Kayf, an Arabic tech education platform.
+Analyze the customer's messages and return ONLY a valid JSON object with these fields:
+
+{{
   "language": "ar" or "en" or "fr" or "other",
   "dialect": "egyptian" or "saudi" or "syrian" or "moroccan" or "standard" or "mixed" or "english" or "other",
   "intent": one of: "browsing", "comparing", "price_sensitive", "hesitant", "ready_to_enroll",
@@ -301,8 +320,24 @@ Analyze the customer message and return ONLY a valid JSON object with these fiel
   "timing": null or one of: "now", "week", "month", "later",
   "payment_methods": list of payment methods mentioned (e.g. ["InstaPay", "Visa"]),
   "has_phone": true/false — did the customer share a phone number?,
-  "name": extracted name string or null
-}
+  "name": extracted name string or null,
+  "interests": {{
+     "courses": list of strings (must match exactly the names in the official courses list below),
+     "tracks": list of strings (must match exactly the names in the official tracks list below),
+     "diplomas": list of strings (must match exactly the names in the official live diplomas list below)
+  }},
+  "rejected_interests": {{
+     "courses": list of strings (must match exactly the names in the official courses list below),
+     "tracks": list of strings (must match exactly the names in the official tracks list below),
+     "diplomas": list of strings (must match exactly the names in the official live diplomas list below)
+  }}
+}}
+
+Official Learning Roadmaps (Tracks and Diplomas):
+{roadmaps_str}
+
+Official Courses:
+{courses_str}
 
 Classification rules:
 - temperature HOT: customer explicitly wants to enroll/register, says now, shares phone to sign up, asks "how do I start"
@@ -312,21 +347,47 @@ Classification rules:
 - timing "week": says next week/بعد أسبوع/الأسبوع الجاي, or any short-term timing within a week (e.g., tomorrow/بكرة, in two days/كمان يومين, in a few days/كمان كام يوم, this week/خلال أيام, soon, or confirming/verifying in a few days/يومين وأأكد/بكرة هقولك/بكرة هأكد/يومين وهاكد)
 - timing "month": says next month/بعد شهر/الشهر الجاي, or a month later
 - timing "later": says later/بعدين/مرة أخرى/not now/in the future (with no short-term timeline specified), or says it's not important/not urgent
-- Works for Arabic (any dialect), English, French, Moroccan Darija, mixed language
+- name: Extracted full name of the customer if they just shared it or introduced themselves. Look at the latest user message and the history. If the customer corrects their name, extract the corrected one. If not mentioned or not clear, return null.
+- interests: Extract the products of interest that the customer has shown interest in or agreed to in this turn or recent history.
+  * Only include courses/tracks/diplomas that the customer actually agreed to, is interested in, or is actively asking about.
+  * Pay attention to the customer's agreement (e.g., if the assistant offered Python or General Programming, and the customer replied "خليها اساسيات البرمجة", then "Introduction to Python Programming" is the agreed interest because that is the official general programming fundamentals course).
+  * The interest names in the output lists must match EXACTLY the names from the official lists above.
+- rejected_interests: Extract the products that the customer explicitly rejects, declines, says they don't want, or changes their mind about (e.g. "I don't want Web development anymore" or "I want AI instead of Web" -> reject Web, interest AI) in this turn or recent history.
 - Return ONLY the JSON, no explanation."""
+
+        user_content = f"Recent conversation history:\n{history_str}\n\nLatest Customer Message: {text}"
 
         try:
             client = _get_classifier()
-            resp = client.chat.completions.create(
-                model=GROQ_CLASSIFIER_MODEL,
-                messages=[
-                    {"role": "system", "content": CLASSIFIER_SYSTEM},
-                    {"role": "user", "content": text},
-                ],
-                temperature=0.0,
-                max_tokens=350,
-                response_format={"type": "json_object"},
-            )
+            try:
+                resp = client.chat.completions.create(
+                    model=GROQ_CLASSIFIER_MODEL,
+                    messages=[
+                        {"role": "system", "content": CLASSIFIER_SYSTEM},
+                        {"role": "user", "content": user_content},
+                    ],
+                    temperature=0.0,
+                    max_tokens=450,
+                    response_format={"type": "json_object"},
+                )
+            except Exception as api_err:
+                err_msg = str(api_err).lower()
+                is_invalid_model = any(k in err_msg for k in ["decommissioned", "not found", "model", "unknown", "invalid", "does not exist", "400", "404"])
+                if is_invalid_model and GROQ_CLASSIFIER_MODEL != "llama-3.3-70b-versatile":
+                    logger.warning(f"⚠️ Classifier model {GROQ_CLASSIFIER_MODEL} failed/decommissioned, retrying with llama-3.3-70b-versatile...")
+                    resp = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[
+                            {"role": "system", "content": CLASSIFIER_SYSTEM},
+                            {"role": "user", "content": user_content},
+                        ],
+                        temperature=0.0,
+                        max_tokens=450,
+                        response_format={"type": "json_object"},
+                    )
+                else:
+                    raise api_err
+
             raw = resp.choices[0].message.content.strip()
             result = json.loads(raw)
             # Normalise
@@ -340,6 +401,8 @@ Classification rules:
             result.setdefault("payment_methods", [])
             result.setdefault("has_phone", False)
             result.setdefault("name", None)
+            result.setdefault("interests", {"courses": [], "tracks": [], "diplomas": []})
+            result.setdefault("rejected_interests", {"courses": [], "tracks": [], "diplomas": []})
             self._last_classification = result
             self._last_classified_text = text
             return result
@@ -547,11 +610,6 @@ Classification rules:
 
     def extract_lead_info(self, text: str) -> dict[str, str]:
         info: dict[str, str] = {}
-        name_patterns = [
-            r"(?:اسمي|الاسم|my name is|My name is)\s*[:\s]+([\u0600-\u06FF\w]+(?:\s+[\u0600-\u06FF\w]+){1,2})",
-            r"(?:my name is|My name is)\s*[:\s]+([a-zA-Z]+(?:\s+[a-zA-Z]+){0,2})",
-            r"^([\u0600-\u06FF\w]+(?:\s+[\u06FF\w]+){0,2})\s+\d",
-        ]
         _non_name_words = {
             "معنديش", "ماعنديش", "ما عندي", "ليس لدي", "لا", "باحب", "بحب", "أحب",
             "عايز", "عاوز", "بدي", "أريد", "اريد", "أنا", "انا", "اسمي", "في",
@@ -560,16 +618,34 @@ Classification rules:
             "شكرا", "شكراً", "عفوا", "عفواً", "ممكن", "هل", "كم", "ما", "لماذا",
             "أستفسر", "استفسر", "سؤال", "عندي", "ودي", "أبغى", "ابغى", "تبغى",
         }
-        for p in name_patterns:
-            m = re.search(p, text)
-            if m:
-                raw = m.group(1).strip()
-                cleaned = re.sub(r"[،,].*$", "", raw).strip()
-                cleaned = re.sub(r"\s+\d+\s*.*$", "", cleaned).strip()
-                cleaned = re.sub(r"\s+(و|من|في|على|مع|وب|from|in)\s+\w+.*$", "", cleaned).strip()
-                if cleaned and len(cleaned) > 1 and len(cleaned) < 30 and cleaned not in _non_name_words:
-                    info["name"] = cleaned
-                    break
+
+        # 1. Try LLM classifier first for name extraction
+        clf = self._classify_with_llm(text)
+        if clf and clf.get("name"):
+            raw = clf["name"].strip()
+            cleaned = re.sub(r"[،,].*$", "", raw).strip()
+            cleaned = re.sub(r"\s+\d+\s*.*$", "", cleaned).strip()
+            cleaned = re.sub(r"\s+(و|من|في|على|مع|وب|from|in)\s+\w+.*$", "", cleaned).strip()
+            if cleaned and len(cleaned) > 1 and len(cleaned) < 30 and cleaned.lower() not in _non_name_words:
+                info["name"] = cleaned
+
+        # 2. Fallback to name regex patterns
+        if "name" not in info:
+            name_patterns = [
+                r"(?:اسمي|الاسم|my name is|My name is)\s*[:\s]+([\u0600-\u06FF\w]+(?:\s+[\u0600-\u06FF\w]+){1,2})",
+                r"(?:my name is|My name is)\s*[:\s]+([a-zA-Z]+(?:\s+[a-zA-Z]+){0,2})",
+                r"^([\u0600-\u06FF\w]+(?:\s+[\u0600-\u06FF\w]+){0,2})\s+\d",
+            ]
+            for p in name_patterns:
+                m = re.search(p, text)
+                if m:
+                    raw = m.group(1).strip()
+                    cleaned = re.sub(r"[،,].*$", "", raw).strip()
+                    cleaned = re.sub(r"\s+\d+\s*.*$", "", cleaned).strip()
+                    cleaned = re.sub(r"\s+(و|من|في|على|مع|وب|from|in)\s+\w+.*$", "", cleaned).strip()
+                    if cleaned and len(cleaned) > 1 and len(cleaned) < 30 and cleaned.lower() not in _non_name_words:
+                        info["name"] = cleaned
+                        break
 
         phone_patterns = [
             r"(?:رقم[يي]?|phone|whatsapp|واتس|موبايل|تلفون|جوال|tel)\s*[:\s]*((?:\+?\d{1,3})?[\d\s\-\(\)]{7,15})",
@@ -816,7 +892,52 @@ Classification rules:
         if not self.current_lead:
             return
         
-        # 1. Handle negative preferences (changing mind)
+        clf = self._classify_with_llm(text)
+        if clf and ("interests" in clf or "rejected_interests" in clf):
+            # 1. Handle rejected/negated interests first
+            rejected = clf.get("rejected_interests", {"courses": [], "tracks": [], "diplomas": []})
+            if rejected:
+                for c in rejected.get("courses", []):
+                    if c in self.current_lead.products.courses:
+                        self.current_lead.products.courses.remove(c)
+                for t in rejected.get("tracks", []):
+                    if t in self.current_lead.products.tracks:
+                        self.current_lead.products.tracks.remove(t)
+                for d in rejected.get("diplomas", []):
+                    if d in self.current_lead.products.diplomas:
+                        self.current_lead.products.diplomas.remove(d)
+
+            # 2. Handle positive interests
+            interests = clf.get("interests", {"courses": [], "tracks": [], "diplomas": []})
+            courses = interests.get("courses", [])
+            tracks = interests.get("tracks", [])
+            diplomas = interests.get("diplomas", [])
+            
+            # Add new interests if they are not already in the list
+            for c in courses:
+                if c not in self.current_lead.products.courses:
+                    self.current_lead.products.courses.append(c)
+            for t in tracks:
+                if t not in self.current_lead.products.tracks:
+                    self.current_lead.products.tracks.append(t)
+            for d in diplomas:
+                if d not in self.current_lead.products.diplomas:
+                    self.current_lead.products.diplomas.append(d)
+
+            # Update goal based on tracks/diplomas
+            for t_name in self.current_lead.products.tracks + self.current_lead.products.diplomas:
+                t_name_lower = t_name.lower()
+                if "web" in t_name_lower:
+                    self.current_lead.products.goal = "تعلم تطوير الويب"
+                elif "data" in t_name_lower:
+                    self.current_lead.products.goal = "تعلم علوم البيانات"
+                elif "ai" in t_name_lower:
+                    self.current_lead.products.goal = "تعلم الذكاء الاصطناعي"
+                elif "cyber" in t_name_lower or "soc" in t_name_lower or "pentesting" in t_name_lower or "penetration" in t_name_lower:
+                    self.current_lead.products.goal = "تعلم الأمن السيبراني"
+            return
+
+        # 1. Fallback to regex-based tracking (Handle negative preferences / changing mind)
         text_lower = text.lower()
         clean_text = text_lower
         
@@ -859,10 +980,15 @@ Classification rules:
                 self.current_lead.products.tracks = [t for t in self.current_lead.products.tracks if "ai" not in t.lower() and "deep learning" not in t.lower()]
                 self.current_lead.products.diplomas = [d for d in self.current_lead.products.diplomas if "ai" not in d.lower()]
 
-        # 2. Scan text for positive interests
+        # 2. Fallback scan text for positive interests
         self._scan_text_for_products(clean_text)
 
     def _scan_text_for_products(self, t: str) -> None:
+        # Map generic "Programming Fundamentals" terms to the introductory course "Introduction to Python Programming"
+        if re.search(r"\b(اساسيات البرمجة|أساسيات البرمجة|البرمجة العامة|البرمجة للمبتدئين|programming fundamentals|programming basics|intro to programming)\b", t.lower()):
+            if "Introduction to Python Programming" not in self.current_lead.products.courses:
+                self.current_lead.products.courses.append("Introduction to Python Programming")
+
         t_norm = t.replace("-", " ").replace("_", " ").replace("\u2011", " ").replace("\u2013", " ").replace("\u2014", " ")
 
         # Normalize Arabic technology words to English to match roadmap/course names
@@ -995,14 +1121,31 @@ Classification rules:
         ]
 
         start_time = time.time()
+        attempt_model = GROQ_MODEL
         try:
             llm = _get_llm()
-            resp = llm.chat.completions.create(
-                model=GROQ_MODEL,
-                messages=messages,
-                temperature=0.7,
-                max_tokens=600,
-            )
+            try:
+                resp = llm.chat.completions.create(
+                    model=attempt_model,
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=600,
+                )
+            except Exception as api_err:
+                err_msg = str(api_err).lower()
+                is_invalid_model = any(k in err_msg for k in ["decommissioned", "not found", "model", "unknown", "invalid", "does not exist", "400", "404"])
+                if is_invalid_model and attempt_model != "llama-3.3-70b-versatile":
+                    logger.warning(f"⚠️ Model {attempt_model} failed/decommissioned on Groq, retrying with llama-3.3-70b-versatile...")
+                    attempt_model = "llama-3.3-70b-versatile"
+                    resp = llm.chat.completions.create(
+                        model=attempt_model,
+                        messages=messages,
+                        temperature=0.7,
+                        max_tokens=600,
+                    )
+                else:
+                    raise api_err
+
             response_content = resp.choices[0].message.content.strip()
             latency_ms = int((time.time() - start_time) * 1000)
 
@@ -1014,7 +1157,7 @@ Classification rules:
                 completion_tokens = getattr(resp.usage, "completion_tokens", 0) or 0
 
             # Calculate cost
-            llm_cost = calculate_llm_cost(GROQ_MODEL, prompt_tokens, completion_tokens)
+            llm_cost = calculate_llm_cost(attempt_model, prompt_tokens, completion_tokens)
 
             # Build think step summary
             think_step = (
@@ -1024,13 +1167,15 @@ Classification rules:
                 f"Objections: {objections}\n"
                 f"Temperature: {temperature}"
             )
+            if attempt_model != GROQ_MODEL:
+                think_step += f"\nNote: Fell back from {GROQ_MODEL} to {attempt_model}"
 
             # Log to usage tracker
             self.usage_logger.log(
                 user_id=user_id,
                 conversation_id=conversation_id,
                 message_id=user_message_id,
-                model=GROQ_MODEL,
+                model=attempt_model,
                 provider="Groq",
                 input_tokens=prompt_tokens,
                 output_tokens=completion_tokens,

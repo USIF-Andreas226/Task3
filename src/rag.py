@@ -49,6 +49,40 @@ class KnowledgeBase:
         if roadmaps_path.exists():
             with open(roadmaps_path) as f:
                 self.roadmaps = json.load(f)
+        
+        # Programmatically ensure Full-Stack and Pentesting live diplomas are present in roadmaps
+        if not any(r["id"] == "R014" for r in self.roadmaps):
+            self.roadmaps.append({
+                "id": "R014",
+                "name": "Full-Stack Web Development Diploma - Live",
+                "type": "live",
+                "track": "Web Development",
+                "duration": "14 weeks",
+                "course_count": 10,
+                "skills": ["HTML/CSS", "JavaScript", "React", "Node.js", "TypeScript", "PostgreSQL", "MongoDB", "DevOps", "Docker", "Deployment"],
+                "tools": ["React", "Node.js", "TypeScript", "PostgreSQL", "MongoDB", "Docker", "Git"],
+                "prerequisites": "None",
+                "levels": ["Beginner", "Intermediate", "Advanced"],
+                "course_ids": ["C018", "C019", "C020", "C021", "C023", "C024", "C025", "C026", "C039", "C040"],
+                "price": 900,
+                "link": "https://kayfa.com/diplomas/full-stack"
+            })
+        if not any(r["id"] == "R015" for r in self.roadmaps):
+            self.roadmaps.append({
+                "id": "R015",
+                "name": "Penetration Testing Diploma - Live",
+                "type": "live",
+                "track": "Cybersecurity",
+                "duration": "10 weeks",
+                "course_count": 5,
+                "skills": ["Network Pentesting", "Web Security", "Exploitation", "Reporting", "Kali Linux"],
+                "tools": ["Kali Linux", "Metasploit", "Burp Suite", "Nmap", "Wireshark"],
+                "prerequisites": "Networking fundamentals, Linux basics, and programming logic",
+                "levels": ["Beginner", "Intermediate", "Advanced"],
+                "course_ids": ["C011", "C012", "C013", "C014", "C017"],
+                "price": 850,
+                "link": "https://kayfa.com/diplomas/pen-testing"
+            })
 
         for md_file in DATA_DIR.glob("*.md"):
             if md_file.name == "data_summary.md":
