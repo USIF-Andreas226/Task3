@@ -10,7 +10,7 @@ if env_local.exists():
     load_dotenv(dotenv_path=env_local)
 
 # Streamlit Cloud: inject secrets into environment for sub-modules (agent.py, crm.py)
-for _key in ["OPENROUTER_API_KEY", "OPENROUTER_MODEL", "MONGO_URI", "MONGO_DB", "MONGO_COLLECTION"]:
+for _key in ["GROQ_API_KEY", "GROQ_MODEL", "MONGO_URI", "MONGO_DB", "MONGO_COLLECTION"]:
     if _key not in os.environ:
         val = st.secrets.get(_key)
         if val:
@@ -25,6 +25,7 @@ st.set_page_config(
 
 import sys
 sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
+from src.crm import CRMClient
 
 st.markdown("""
 <style>
@@ -127,70 +128,133 @@ st.markdown("""
 </style>
     """, unsafe_allow_html=True)
 
-st.markdown('<div class="logo-text">🎓 Kayf — AI Sales Agent</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">مساعد المبيعات الذكي | Smart Sales Assistant</div>', unsafe_allow_html=True)
+# Initialize database client
+if "crm" not in st.session_state:
+    st.session_state.crm = CRMClient()
+crm = st.session_state.crm
 
-page = st.session_state.get("page", "chat")
+import re
 
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("📞  Chat Agent", use_container_width=True,
-                     type="primary" if page == "chat" else "secondary"):
-            st.session_state.page = "chat"
-            st.rerun()
-    with c2:
-        if st.button("📋  CRM Tickets", use_container_width=True,
-                     type="primary" if page == "crm" else "secondary"):
-            st.session_state.page = "crm"
-            st.rerun()
-
-LOGIN_USERNAME = os.environ.get("LOGIN_USERNAME",
-    st.secrets.get("login_username", "admin"))
-# For development/testing, use safe default. In production, set via environment or Streamlit secrets.
-# IMPORTANT: Change these credentials in production via: environment variables or st.secrets
-LOGIN_PASSWORD = os.environ.get("LOGIN_PASSWORD",
-    st.secrets.get("login_password", "test123"))
-
-if page == "crm" and "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-
-if page == "crm" and not st.session_state.authenticated:
+# Check global authentication
+if "authenticated" not in st.session_state or not st.session_state.authenticated:
     st.markdown("""
-    <style>
-        .login-container {
-            max-width: 400px; margin: 8rem auto; padding: 2rem;
-            background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            text-align: center;
-        }
-        .login-logo { font-size: 3rem; margin-bottom: 0.5rem; }
-        .login-title { font-size: 1.3rem; font-weight: 700; color: #1E3A5F; margin-bottom: 0.25rem; }
-        .login-subtitle { font-size: 0.9rem; color: #6B7A8F; margin-bottom: 1.5rem; }
-    </style>
-    <div class="login-container">
-        <div class="login-logo">🔒</div>
-        <div class="login-title">CRM — تسجيل الدخول</div>
-        <div class="login-subtitle">يرجى تسجيل الدخول لعرض تذاكر CRM</div>
+    <div style="max-width: 450px; margin: 3rem auto 1rem; text-align: center;">
+        <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🔒</div>
+        <h3 style="color: var(--kf-accent); font-weight: 700; margin-bottom: 0.2rem;">Kayf Sales Advisor</h3>
+        <p style="color: var(--kf-muted); font-size: 0.9rem;">تسجيل الدخول أو إنشاء حساب | Login or Sign Up</p>
     </div>
     """, unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    col1, col2, col3 = st.columns([1, 2.5, 1])
     with col2:
-        with st.form("login_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            submitted = st.form_submit_button("🔑  Sign In", use_container_width=True, type="primary")
-            if submitted:
-                if username == LOGIN_USERNAME and password == LOGIN_PASSWORD:
-                    st.session_state.authenticated = True
-                    st.rerun()
-                else:
-                    st.error("Invalid credentials")
+        tab_login, tab_signup = st.tabs(["🔑 تسجيل الدخول | Login", "📝 حساب جديد | Sign Up"])
+        
+        with tab_login:
+            with st.form("login_form"):
+                email = st.text_input("البريد الإلكتروني | Email", placeholder="yourname@example.com")
+                password = st.text_input("كلمة المرور | Password", type="password", placeholder="••••••••")
+                submitted = st.form_submit_button("🔑 تسجيل الدخول | Sign In", use_container_width=True, type="primary")
+                
+                if submitted:
+                    email = email.strip().lower()
+                    if not email or not password:
+                        st.error("يرجى ملء جميع الحقول | Please fill all fields")
+                    else:
+                        user = crm.verify_user(email, password)
+                        if user:
+                            st.session_state.authenticated = True
+                            st.session_state.user_id = user["user_id"]
+                            st.session_state.role = user["role"]
+                            st.session_state.page = "chat"
+                            st.success("تم تسجيل الدخول بنجاح! | Login successful!")
+                            st.rerun()
+                        else:
+                            st.error("البريد الإلكتروني أو كلمة المرور غير صحيحة | Invalid email or password")
+                            
+        with tab_signup:
+            with st.form("signup_form"):
+                new_email = st.text_input("البريد الإلكتروني | Email", placeholder="yourname@example.com")
+                new_password = st.text_input("كلمة المرور | Password", type="password", placeholder="••••••••")
+                confirm_password = st.text_input("تأكيد كلمة المرور | Confirm Password", type="password", placeholder="••••••••")
+                role = st.selectbox("الدور | Role", ["user", "admin"])
+                signup_submitted = st.form_submit_button("📝 إنشاء حساب | Sign Up", use_container_width=True, type="primary")
+                
+                if signup_submitted:
+                    new_email = new_email.strip().lower()
+                    email_pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+                    if not new_email or not new_password or not confirm_password:
+                        st.error("يرجى ملء جميع الحقول | Please fill all fields")
+                    elif not re.match(email_pattern, new_email):
+                        st.error("البريد الإلكتروني غير صالح | Invalid email address")
+                    elif len(new_password) < 6:
+                        st.error("يجب أن تكون كلمة المرور 6 أحرف على الأقل | Password must be at least 6 characters")
+                    elif new_password != confirm_password:
+                        st.error("كلمات المرور غير متطابقة | Passwords do not match")
+                    else:
+                        user = crm.create_user(new_email, new_password, role)
+                        if user:
+                            st.session_state.authenticated = True
+                            st.session_state.user_id = user["user_id"]
+                            st.session_state.role = user["role"]
+                            st.session_state.page = "chat"
+                            st.success("تم إنشاء الحساب بنجاح! | Sign up successful!")
+                            st.rerun()
+                        else:
+                            st.error("البريد الإلكتروني مسجل بالفعل | Email already registered")
     st.stop()
 
+# --- Authenticated App Layout ---
+page = st.session_state.get("page", "chat")
+
+# Top bar layout with logo and logout
+col_logo, col_logout = st.columns([8, 2])
+with col_logo:
+    st.markdown('<div class="logo-text" style="text-align: left; padding: 10px;">🎓 Kayf — AI Sales Agent</div>', unsafe_allow_html=True)
+with col_logout:
+    if st.button("🚪 تسجيل الخروج | Logout", use_container_width=True):
+        st.session_state.authenticated = False
+        st.session_state.user_id = None
+        st.session_state.role = None
+        st.session_state.page = "chat"
+        st.session_state.conversation_id = None
+        st.session_state.messages = []
+        st.rerun()
+
+# Navigation Bar based on Role Guard
+if st.session_state.get("role") == "admin":
+    col1, col2, col3 = st.columns([1, 4, 1])
+    with col2:
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            if st.button("📞 Chat Agent", use_container_width=True, type="primary" if page == "chat" else "secondary"):
+                st.session_state.page = "chat"
+                st.rerun()
+        with c2:
+            if st.button("📋 CRM Tickets", use_container_width=True, type="primary" if page == "crm" else "secondary"):
+                st.session_state.page = "crm"
+                st.rerun()
+        with c3:
+            if st.button("💰 Cost Monitor", use_container_width=True, type="primary" if page == "cost" else "secondary"):
+                st.session_state.page = "cost"
+                st.rerun()
+        with c4:
+            if st.button("🔍 Response Trace", use_container_width=True, type="primary" if page == "trace" else "secondary"):
+                st.session_state.page = "trace"
+                st.rerun()
+else:
+    st.session_state.page = "chat"
+    page = "chat"
+
+# Render selected page
 if page == "chat":
     import pages.chat_agent
     pages.chat_agent.show()
-else:
+elif page == "crm":
     import pages.crm_tickets
     pages.crm_tickets.show()
+elif page == "cost":
+    import pages.monitoring_cost
+    pages.monitoring_cost.show()
+elif page == "trace":
+    import pages.monitoring_trace
+    pages.monitoring_trace.show()

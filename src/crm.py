@@ -42,7 +42,7 @@ class LeadInfo(BaseModel):
         default=None,
         description="لغة المحادثة: Arabic أو English"
     )
-    dialect: Literal["egyptian", "saudi", "syrian", "standard"] | None = Field(
+    dialect: str | None = Field(
         default=None,
         description="اللهجة المكتشفة"
     )
@@ -114,6 +114,14 @@ class LeadAssessment(BaseModel):
 
 
 class CRMTicket(BaseModel):
+    user_id: str | None = Field(
+        default=None,
+        description="معرف المستخدم"
+    )
+    conversation_id: str | None = Field(
+        default=None,
+        description="معرف المحادثة"
+    )
     lead: LeadInfo = Field(
         default_factory=LeadInfo,
         description="بيانات العميل الشخصية"
@@ -155,8 +163,14 @@ class CRMClient:
     def __init__(self) -> None:
         self.client: MongoClient | None = None
         self.collection: Any = None
+        self.users_collection: Any = None
+        self.messages_collection: Any = None
+        self.usage_logs_collection: Any = None
         self._connected = False
         self._in_memory: list[dict[str, Any]] = []
+        self._in_memory_users: list[dict[str, Any]] = []
+        self._in_memory_messages: list[dict[str, Any]] = []
+        self._in_memory_usage_logs: list[dict[str, Any]] = []
         if MONGO_AVAILABLE and MONGO_URI:
             try:
                 self.client = MongoClient(
@@ -167,6 +181,9 @@ class CRMClient:
                 self.client.server_info()
                 db = self.client[MONGO_DB]
                 self.collection = db[MONGO_COLLECTION]
+                self.users_collection = db["users"]
+                self.messages_collection = db["messages"]
+                self.usage_logs_collection = db["usage_logs"]
                 self._connected = True
             except (ConnectionFailure, Exception):
                 self._connected = False
@@ -177,13 +194,29 @@ class CRMClient:
 
     def save_ticket(self, ticket: CRMTicket) -> str:
         data = ticket.model_dump()
+        if ticket.ticket_id:
+            if self._connected and self.collection is not None:
+                try:
+                    self.collection.replace_one({"ticket_id": ticket.ticket_id}, data, upsert=True)
+                except Exception:
+                    pass
+            for i, t in enumerate(self._in_memory):
+                if t.get("ticket_id") == ticket.ticket_id:
+                    self._in_memory[i] = data
+                    break
+            else:
+                self._in_memory.append(data)
+            return ticket.ticket_id
+
         counter = len(self._in_memory)
         if self._connected and self.collection is not None:
             try:
                 counter = self.collection.count_documents({})
             except Exception:
                 pass
-        data["ticket_id"] = f"LEAD-2026-{counter + 1:04d}"
+        ticket_id = f"LEAD-2026-{counter + 1:04d}"
+        ticket.ticket_id = ticket_id
+        data["ticket_id"] = ticket_id
         data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
         if self._connected and self.collection is not None:
             try:
@@ -192,7 +225,7 @@ class CRMClient:
             except Exception:
                 pass
         self._in_memory.append(data)
-        return data["ticket_id"]
+        return ticket_id
 
     def get_all_tickets(self) -> list[dict[str, Any]]:
         tickets: list[dict[str, Any]] = []
@@ -218,6 +251,135 @@ class CRMClient:
             if t.get("ticket_id") == ticket_id:
                 return t
         return None
+
+    def create_user(self, email: str, password_clear: str, role: str = "user") -> dict | None:
+        import bcrypt
+        import uuid
+        existing = self.get_user_by_email(email)
+        if existing:
+            return None
+        password_hash = bcrypt.hashpw(password_clear.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        user_id = str(uuid.uuid4())
+        user_data = {
+            "user_id": user_id,
+            "email": email,
+            "password_hash": password_hash,
+            "role": role,
+            "created_at": datetime.now()
+        }
+        if self._connected and self.users_collection is not None:
+            try:
+                self.users_collection.insert_one(user_data)
+            except Exception:
+                pass
+        self._in_memory_users.append(user_data)
+        return user_data
+
+    def get_user_by_email(self, email: str) -> dict | None:
+        if self._connected and self.users_collection is not None:
+            try:
+                doc = self.users_collection.find_one({"email": email})
+                if doc:
+                    doc["_id"] = str(doc["_id"])
+                    return doc
+            except Exception:
+                pass
+        for u in self._in_memory_users:
+            if u["email"] == email:
+                return u
+        return None
+
+    def verify_user(self, email: str, password_clear: str) -> dict | None:
+        import bcrypt
+        user = self.get_user_by_email(email)
+        if not user:
+            return None
+        try:
+            if bcrypt.checkpw(password_clear.encode('utf-8'), user["password_hash"].encode('utf-8')):
+                return user
+        except Exception:
+            pass
+        return None
+
+    def get_all_users(self) -> list[dict[str, Any]]:
+        users = []
+        if self._connected and self.users_collection is not None:
+            try:
+                for doc in self.users_collection.find().sort("created_at", -1):
+                    doc["_id"] = str(doc["_id"])
+                    users.append(doc)
+            except Exception:
+                pass
+        users.extend(self._in_memory_users)
+        seen = set()
+        unique = []
+        for u in users:
+            uid = u.get("user_id")
+            if uid not in seen:
+                seen.add(uid)
+                unique.append(u)
+        return unique
+
+    def save_message(self, user_id: str, conversation_id: str, role: str, content: str) -> str:
+        import uuid
+        message_id = str(uuid.uuid4())
+        msg_data = {
+            "message_id": message_id,
+            "user_id": user_id,
+            "conversation_id": conversation_id,
+            "role": role,
+            "content": content,
+            "timestamp": datetime.now()
+        }
+        if self._connected and self.messages_collection is not None:
+            try:
+                self.messages_collection.insert_one(msg_data)
+            except Exception:
+                pass
+        self._in_memory_messages.append(msg_data)
+        return message_id
+
+    def get_conversation_messages(self, conversation_id: str) -> list[dict[str, Any]]:
+        msgs = []
+        if self._connected and self.messages_collection is not None:
+            try:
+                for doc in self.messages_collection.find({"conversation_id": conversation_id}).sort("timestamp", 1):
+                    doc["_id"] = str(doc["_id"])
+                    msgs.append(doc)
+            except Exception:
+                pass
+        # Fetch from memory as well
+        for m in self._in_memory_messages:
+            if m["conversation_id"] == conversation_id:
+                msgs.append(m)
+        # Deduplicate
+        seen = set()
+        unique = []
+        for m in msgs:
+            mid = m.get("message_id")
+            if mid not in seen:
+                seen.add(mid)
+                unique.append(m)
+        return unique
+
+    def get_all_usage_logs(self) -> list[dict[str, Any]]:
+        logs = []
+        if self._connected and self.usage_logs_collection is not None:
+            try:
+                for doc in self.usage_logs_collection.find().sort("timestamp", -1):
+                    doc["_id"] = str(doc["_id"])
+                    logs.append(doc)
+            except Exception:
+                pass
+        logs.extend(self._in_memory_usage_logs)
+        seen = set()
+        unique = []
+        for l in logs:
+            lid = l.get("log_id")
+            if lid not in seen:
+                seen.add(lid)
+                unique.append(l)
+        return unique
 
     def close(self) -> None:
         if self.client:

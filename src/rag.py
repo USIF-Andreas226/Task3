@@ -251,7 +251,9 @@ class RAGRetriever:
     def __init__(self, kb: KnowledgeBase | None = None) -> None:
         self.kb = kb or KnowledgeBase()
 
-    def retrieve_context(self, query: str) -> str:
+    def retrieve_context(self, query: str, intent: str = "browsing") -> tuple[str, list[dict]]:
+        import time
+        tool_calls = []
         parts: list[str] = []
         q = query.lower()
 
@@ -263,7 +265,18 @@ class RAGRetriever:
         parts.append(f"المسارات المتاحة: {', '.join(sorted(available_tracks))}")
         parts.append("")
 
+        # 1. Semantic search courses
+        t0 = time.time()
         courses = self.kb.semantic_search_courses(query, top_k=5)
+        dt_courses = int((time.time() - t0) * 1000)
+        tool_calls.append({
+            "tool_name": "semantic_search_courses",
+            "args": {"query": query, "top_k": 5},
+            "result_summary": f"Found {len(courses)} courses",
+            "sources": ["kayfa_courses.json"] if courses else [],
+            "latency_ms": dt_courses
+        })
+
         if courses:
             parts.append("## الدورات ذات الصلة بطلبك")
             for c in courses:
@@ -273,6 +286,8 @@ class RAGRetriever:
                 )
             parts.append("")
 
+        # 2. Search roadmaps
+        t0 = time.time()
         roadmaps = self.kb.search_roadmaps(query)
         if not roadmaps:
             q_words = set(re.sub(r"[^\w\s]", " ", q).split())
@@ -282,6 +297,15 @@ class RAGRetriever:
                     if len(w) > 2 and w in name_lower:
                         roadmaps.append(r)
                         break
+        dt_roadmaps = int((time.time() - t0) * 1000)
+        tool_calls.append({
+            "tool_name": "search_roadmaps",
+            "args": {"query": query},
+            "result_summary": f"Found {len(roadmaps)} roadmaps",
+            "sources": ["kayfa_roadmaps.json"] if roadmaps else [],
+            "latency_ms": dt_roadmaps
+        })
+
         if roadmaps:
             parts.append("## المسارات والدبلومات ذات الصلة")
             for r in roadmaps[:4]:
@@ -321,11 +345,17 @@ class RAGRetriever:
                         )
                     parts.append("")
 
+        # 3. Diploma docs: Candidate B optimization - intent gate
         diploma_keywords = ["diploma", "دبلوم", "دبلومة", "live", "مباشر"]
-        if any(k in q for k in diploma_keywords):
+        has_diploma_kw = any(k in q for k in diploma_keywords)
+        should_fetch_diploma = (intent == "ready_to_enroll" or has_diploma_kw)
+        
+        if should_fetch_diploma:
             q_words = set(re.sub(r"[^\w\s]", " ", q).lower().split())
             for doc_name in ["diploma_soc", "diploma_ai", "diploma_data_science", "diploma_pen_test", "diploma_full_stack"]:
+                t0 = time.time()
                 doc = self.kb.get_markdown_doc(doc_name)
+                dt_doc = int((time.time() - t0) * 1000)
                 if doc:
                     doc_lower = doc.lower()
                     matched = False
@@ -338,24 +368,50 @@ class RAGRetriever:
                             matched = True
                             break
                     if matched:
+                        tool_calls.append({
+                            "tool_name": "get_markdown_doc",
+                            "args": {"doc_name": doc_name},
+                            "result_summary": doc[:200],
+                            "sources": [f"{doc_name}.md"],
+                            "latency_ms": dt_doc
+                        })
                         lines = doc.split("\n")
                         relevant = "\n".join(lines[:min(60, len(lines))])
                         parts.append(f"## [معلومات الدبلومة: {doc_name}]")
                         parts.append(relevant)
                         parts.append("")
 
+        # 4. Refund policy
         if "refund" in q or "استرجاع" in q or "استرداد" in q:
+            t0 = time.time()
             refund_doc = self.kb.get_markdown_doc("kayfa_policies_faqs")
+            dt_refund = int((time.time() - t0) * 1000)
             if refund_doc:
                 start = refund_doc.find("## Refund Policy")
                 if start >= 0:
+                    tool_calls.append({
+                        "tool_name": "get_markdown_doc",
+                        "args": {"doc_name": "kayfa_policies_faqs"},
+                        "result_summary": refund_doc[start:start+200],
+                        "sources": ["kayfa_policies_faqs.md"],
+                        "latency_ms": dt_refund
+                    })
                     parts.append("## سياسة الاسترجاع")
                     parts.append(refund_doc[start : start + 1000])
 
         if len(parts) < 4:
+            t0 = time.time()
             md_results = self.kb.search_markdown(query)
+            dt_md = int((time.time() - t0) * 1000)
             if md_results:
                 seen: set[str] = set()
+                tool_calls.append({
+                    "tool_name": "search_markdown",
+                    "args": {"query": query},
+                    "result_summary": f"Found {len(md_results)} md snippets",
+                    "sources": list(set(r[0] + ".md" for r in md_results[:4])),
+                    "latency_ms": dt_md
+                })
                 for doc_name, snippet, _ in md_results[:4]:
                     key = f"{doc_name}:{snippet[:40]}"
                     if key not in seen:
@@ -364,9 +420,19 @@ class RAGRetriever:
         
         # Always include company info if context is still sparse
         if len(parts) < 5:
+            t0 = time.time()
             company_doc = self.kb.get_markdown_doc("kayfa_company_overview")
+            dt_company = int((time.time() - t0) * 1000)
             if company_doc:
+                tool_calls.append({
+                    "tool_name": "get_markdown_doc",
+                    "args": {"doc_name": "kayfa_company_overview"},
+                    "result_summary": company_doc[:200],
+                    "sources": ["kayfa_company_overview.md"],
+                    "latency_ms": dt_company
+                })
                 parts.append("## نبذة عن كيف")
                 parts.append(company_doc[:500])
 
-        return "\n".join(parts)
+        context = "\n".join(parts)
+        return context, tool_calls

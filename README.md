@@ -14,30 +14,19 @@ An intelligent AI Sales Agent for Kayf — a conversational assistant that under
 ## 🏗 Architecture
 
 ```
-├── app.py                          # Streamlit entry point with page navigation
+├── app.py                          # Streamlit entry point with dynamic auth & page navigation
 ├── pages/
 │   ├── chat_agent.py               # Chat interface page
-│   └── crm_tickets.py              # CRM ticket viewer page
+│   ├── crm_tickets.py              # CRM ticket viewer page
+│   ├── monitoring_cost.py          # NEW: Cost & token spend monitor dashboard (Admin-only)
+│   └── monitoring_trace.py         # NEW: Response trace & hallucination warning dashboard (Admin-only)
 ├── src/
-│   ├── agent.py                    # Sales Agent logic (intent, dialect, lead capture)
-│   ├── rag.py                      # Knowledge Base & RAG retrieval
-│   └── crm.py                      # MongoDB CRM integration with Pydantic models
-├── data/
-│   ├── kayfa_courses.json          # 52 structured courses
-│   ├── kayfa_roadmaps.json         # 13 learning paths (10 tracks + 3 live diplomas)
-│   ├── kayfa_company_overview.md   # Company identity, accreditation, team
-│   ├── kayfa_policies_faqs.md      # Refund policy, payment, certificates, FAQs
-│   ├── kayfa_privacy_policy.md     # Data protection and privacy
-│   ├── kayfa_instructors.md        # 25 instructor profiles
-│   ├── kayfa_paid_individual_courses.md  # Paid course catalog with prices
-│   ├── kayfa_paid_educational_tracks.md  # Self-paced track details
-│   ├── kayfa_free_educational_content.md # Free courses and resources
-│   ├── diploma_ai.md              # AI Diploma sales brief
-│   ├── diploma_data_science.md    # Data Science Diploma sales brief
-│   ├── diploma_soc.md             # SOC Diploma sales brief
-│   ├── diploma_pen_test.md        # Penetration Testing Diploma sales brief
-│   ├── diploma_full_stack.md      # Full-Stack Diploma sales brief
-│   └── data_summary.md            # Data reference guide
+│   ├── agent.py                    # Sales Agent logic (intent, dialect, lead capture, LLM usage logs)
+│   ├── rag.py                      # Knowledge Base & optimized RAG retrieval with intent gate
+│   ├── crm.py                      # MongoDB integration (Users, Messages, and CRM Tickets)
+│   ├── usage_logger.py             # NEW: Logs usage records
+│   └── pricing.py                  # NEW: LLM token pricing dictionary & calculators
+├── OPTIMIZATION.md                 # NEW: Performance metrics and optimization documentation
 ├── requirements.txt
 └── .streamlit/config.toml
 ```

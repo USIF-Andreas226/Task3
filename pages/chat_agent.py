@@ -12,6 +12,9 @@ def initialize_session():
         st.session_state.crm = crm
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    if "conversation_id" not in st.session_state:
+        import uuid
+        st.session_state.conversation_id = str(uuid.uuid4())
 
 
 def show():
@@ -58,7 +61,9 @@ def show():
 
         with st.spinner("جارٍ التفكير..." if any("\u0600" <= c <= "\u06FF" for c in prompt) else "Thinking..."):
             agent: SalesAgent = st.session_state.agent
-            response = agent.generate_response(prompt)
+            user_id = st.session_state.get("user_id", "guest")
+            conversation_id = st.session_state.get("conversation_id", "default")
+            response = agent.generate_response(prompt, user_id=user_id, conversation_id=conversation_id)
 
         _render_bubble("assistant", response)
         st.session_state.messages.append({"role": "assistant", "content": response})
@@ -82,8 +87,10 @@ def show():
 def _quick_topic(text: str):
     st.session_state.messages.append({"role": "user", "content": text})
     agent: SalesAgent = st.session_state.agent
+    user_id = st.session_state.get("user_id", "guest")
+    conversation_id = st.session_state.get("conversation_id", "default")
     with st.spinner("جارٍ التفكير..." if any("\u0600" <= c <= "\u06FF" for c in text) else "Thinking..."):
-        response = agent.generate_response(text)
+        response = agent.generate_response(text, user_id=user_id, conversation_id=conversation_id)
     st.session_state.messages.append({"role": "assistant", "content": response})
 
 
