@@ -1070,29 +1070,7 @@ Classification rules:
         context: str, user_id: str, conversation_id: str, user_message_id: str,
         tool_calls: list[dict]
     ) -> str:
-        is_first = len(self.conversation_history) <= 1
-        is_generic = len(user_input.strip()) < 10 or (intent == "browsing" and not re.search(r"(cybersecurity|security|soc|data\s*science|ai|artificial intelligence|web|programming|python|machine learning|deep learning|cloud|devops|mobile|hacking|pentest|network|linux|course|courses|دورات|كورسات|مسارات|diploma|دبلوم|دبلومة|available|متاحة|offer|تقدم|عندك|شو عند)", user_input.lower()))
-        if is_first and is_generic and not buying_signals and not objections:
-            # Even for fallback greeting, we should log a zero-cost trace so the admin can trace the entry point!
-            fallback_greeting = self._fallback_greeting("en" if lang == "en" else dialect)
-            self.usage_logger.log(
-                user_id=user_id,
-                conversation_id=conversation_id,
-                message_id=user_message_id,
-                model=GROQ_MODEL,
-                provider="System (Greeting)",
-                input_tokens=0,
-                output_tokens=0,
-                embedding_tokens=0,
-                llm_cost_usd=0.0,
-                embedding_cost_usd=0.0,
-                total_cost_usd=0.0,
-                tool_calls=tool_calls,
-                think_step="Greeting Fallback - generic query detected",
-                final_response=fallback_greeting,
-                latency_ms=0
-            )
-            return fallback_greeting
+
 
         prompt = SYSTEM_PROMPT_AR if lang == "ar" else SYSTEM_PROMPT_EN
 

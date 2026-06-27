@@ -13,24 +13,24 @@ PRICING = {
         "output": 10.000
     },
     "openai/gpt-oss-20b:free": {
-        "input": 0.0,
-        "output": 0.0
+        "input": 0.0001,
+        "output": 0.0001
     },
     "google/gemini-flash-1.5-free": {
-        "input": 0.0,
-        "output": 0.0
+        "input": 0.0001,
+        "output": 0.0001
     },
     "llama-3.1-8b-instant": {
-        "input": 0.05,
-        "output": 0.08
+        "input": 0.0001,
+        "output": 0.0001
     },
     "llama-3.3-70b-versatile": {
         "input": 0.59,
         "output": 0.79
     },
     "openai/gpt-oss-120b": {
-        "input": 0.0,
-        "output": 0.0
+        "input": 0.00001,
+        "output": 0.00001
     },
     # Default fallback pricing (GPT-4o-mini rates)
     "default": {
