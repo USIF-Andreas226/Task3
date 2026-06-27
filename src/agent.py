@@ -239,8 +239,8 @@ SYSTEM_PROMPT_EN = """You are an AI sales agent for Kayf, a leading Arabic tech 
 {conversation_history}
 
 ## Output instructions:
-- Respond naturally and conversationally
-- Use the same language as the customer
+- You MUST write your response entirely in English. Do not write in Arabic under any circumstances, even if the knowledge base context or pitch lines are in Arabic. Translate any Arabic information to English for the customer.
+- Respond naturally and conversationally in English
 - Be persuasive but not pushy
 - When they want to enroll, gently ask for their info
 - **Collect name and phone before giving any course/pricing details**
@@ -347,6 +347,7 @@ Classification rules:
 - timing "week": says next week/بعد أسبوع/الأسبوع الجاي, or any short-term timing within a week (e.g., tomorrow/بكرة, in two days/كمان يومين, in a few days/كمان كام يوم, this week/خلال أيام, soon, or confirming/verifying in a few days/يومين وأأكد/بكرة هقولك/بكرة هأكد/يومين وهاكد)
 - timing "month": says next month/بعد شهر/الشهر الجاي, or a month later
 - timing "later": says later/بعدين/مرة أخرى/not now/in the future (with no short-term timeline specified), or says it's not important/not urgent
+- dialect: If the language is English, set dialect to "english". If the language is Arabic, set dialect to the specific Arabic dialect: "egyptian", "saudi", "syrian", "moroccan", "standard" (for Modern Standard Arabic), or "mixed".
 - name: Extracted full name of the customer if they just shared it or introduced themselves. Look at the latest user message and the history. If the customer corrects their name, extract the corrected one. If not mentioned or not clear, return null.
 - interests: Extract the products of interest that the customer has shown interest in or agreed to in this turn or recent history.
   * Only include courses/tracks/diplomas that the customer actually agreed to, is interested in, or is actively asking about.
@@ -418,9 +419,8 @@ Classification rules:
     def detect_language(self, text: str) -> str:
         """Primary: LLM classifier. Fallback: Arabic character ratio."""
         clf = self._classify_with_llm(text)
-        if clf:
-            lang = clf.get("language", "")
-            return "ar" if lang == "ar" else ("en" if lang == "en" else "en")
+        if clf and clf.get("language") == "ar":
+            return "ar"
         # Regex fallback
         arabic_chars = len(re.findall(
             r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]", text
