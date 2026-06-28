@@ -111,6 +111,10 @@ class LeadAssessment(BaseModel):
         default=None,
         description="الهدف المستخرج من المحادثة"
     )
+    lead_captured_shown: bool = Field(
+        default=False,
+        description="هل تم عرض رسالة تأكيد تسجيل البيانات للعميل"
+    )
 
 
 class CRMTicket(BaseModel):
