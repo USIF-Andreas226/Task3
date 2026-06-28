@@ -174,6 +174,8 @@ If you see this: `❌ OPENROUTER_API_KEY is not set` → API key is missing
     MONGO_COLLECTION = "tickets"
     ```
 
+# Architicutre
+
 #### API Details:
 
 | Property | Value |
