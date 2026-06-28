@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+from datetime import datetime
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -135,15 +136,29 @@ if "crm" not in st.session_state:
     st.session_state.crm = CRMClient()
 crm = st.session_state.crm
 
-# Initialize WhatsApp reporter with daily scheduler
+# Initialize WhatsApp reporter (no APScheduler — Streamlit-safe)
 if "whatsapp" not in st.session_state:
     try:
         from src.whatsapp import WhatsAppReporter
         st.session_state.whatsapp = WhatsAppReporter(crm)
-        st.session_state.whatsapp.start()
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f"Failed to init WhatsApp reporter: {e}")
+
+# Streamlit-safe daily report trigger (checked on each interaction)
+if "whatsapp" in st.session_state and st.session_state.whatsapp.client:
+    reporter = st.session_state.whatsapp
+    now = datetime.now()
+    last_sent = st.session_state.get("last_report_sent")
+
+    should_send = (
+        now.hour == 8 and now.minute < 5
+        and (last_sent is None or (now - last_sent).days >= 1)
+    )
+
+    if should_send:
+        reporter.send_report()
+        st.session_state.last_report_sent = now
 
 import re
 
@@ -253,6 +268,14 @@ if st.session_state.get("role") == "admin":
             if st.button("🔍 Response Trace", use_container_width=True, type="primary" if page == "trace" else "secondary"):
                 st.session_state.page = "trace"
                 st.rerun()
+    st.divider()
+    if "whatsapp" in st.session_state:
+        if st.button("📱 Test WhatsApp Report Now", use_container_width=True):
+            try:
+                st.session_state.whatsapp.send_report()
+                st.success("✅ WhatsApp report sent!")
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
 else:
     st.session_state.page = "chat"
     page = "chat"

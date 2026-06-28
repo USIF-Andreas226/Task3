@@ -1,27 +1,32 @@
 import os
 from datetime import datetime
 from twilio.rest import Client
-from apscheduler.schedulers.background import BackgroundScheduler
 import logging
 
 logger = logging.getLogger(__name__)
 
-TWILIO_SID   = os.environ["TWILIO_ACCOUNT_SID"]
-TWILIO_TOKEN = os.environ["TWILIO_AUTH_TOKEN"]
-TWILIO_FROM  = os.environ["TWILIO_FROM"]
-SALES_NUMBERS = [
-    os.environ["SALES_NUMBER_1"],
-]
-
 class WhatsAppReporter:
     def __init__(self, crm):
         self.crm = crm
+
+        sid   = os.environ.get("TWILIO_ACCOUNT_SID")
+        token = os.environ.get("TWILIO_AUTH_TOKEN")
+        self.from_  = os.environ.get("TWILIO_FROM")
+        self.numbers = [n for n in [
+            os.environ.get("SALES_NUMBER_1"),
+            os.environ.get("SALES_NUMBER_2"),
+        ] if n]
+
+        if not all([sid, token, self.from_, self.numbers]):
+            logger.warning("Twilio credentials missing — WhatsApp disabled")
+            self.client = None
+            return
+
         try:
-            self.client = Client(TWILIO_SID, TWILIO_TOKEN)
+            self.client = Client(sid, token)
         except Exception as e:
             logger.error(f"Failed to initialize Twilio client: {e}")
             self.client = None
-        self.scheduler = BackgroundScheduler()
 
     def _build_report(self) -> str:
         tickets = self.crm.get_all_tickets()
@@ -32,7 +37,7 @@ class WhatsAppReporter:
 
         for t in tickets:
             temp = t.get("assessment", {}).get("temperature", "cold")
-            created = t.get("timestamp", "") # Assuming timestamp is stored as "YYYY-MM-DD HH:MM"
+            created = t.get("timestamp", "")
 
             if created and created[:10] == str(today):
                 new_today += 1
@@ -84,31 +89,30 @@ class WhatsAppReporter:
         if not self.client:
             return
         message = self._build_report()
-        for number in SALES_NUMBERS:
+        for number in self.numbers:
             try:
                 self.client.messages.create(
-                    from_=TWILIO_FROM,
+                    from_=self.from_,
                     to=number,
                     body=message
                 )
             except Exception as e:
                 logger.error(f"Failed to send WhatsApp report to {number}: {e}")
-        print(f"✅ WhatsApp report sent at {datetime.now()}")
+        logger.info(f"WhatsApp report sent at {datetime.now()}")
 
     def send_lead_alert(self, ticket_data: dict):
-        """Send an instant alert to sales when a new qualified lead is captured."""
         if not self.client:
             return
-        
+
         lead = ticket_data.get("lead", {})
         assessment = ticket_data.get("assessment", {})
         prods = ticket_data.get("products", {})
-        
+
         name = lead.get("name", "غير معروف")
         phone = lead.get("phone", "—")
         temp = assessment.get("temperature", "cold")
         interest = (prods.get("diplomas") or prods.get("tracks") or prods.get("courses") or ["غير محدد"])[0]
-        
+
         if temp == "hot":
             emoji = "🔴"
             urgency = "فوري"
@@ -116,7 +120,7 @@ class WhatsAppReporter:
             emoji = "🟡"
             urgency = "عادي"
         else:
-            return # Don't alert for cold leads
+            return
 
         message = f"""🚨 *عميل جديد ({urgency})* {emoji}
 ━━━━━━━━━━━━━━━
@@ -127,22 +131,12 @@ class WhatsAppReporter:
 ━━━━━━━━━━━━━━━
 _يرجى التواصل معه في أقرب وقت_"""
 
-        for number in SALES_NUMBERS:
+        for number in self.numbers:
             try:
                 self.client.messages.create(
-                    from_=TWILIO_FROM,
+                    from_=self.from_,
                     to=number,
                     body=message
                 )
             except Exception as e:
                 logger.error(f"Failed to send WhatsApp alert to {number}: {e}")
-
-    def start(self):
-        self.scheduler.add_job(
-            self.send_report,
-            trigger="cron",
-            hour=8,
-            minute=0
-        )
-        self.scheduler.start()
-        print("📱 WhatsApp scheduler started")
