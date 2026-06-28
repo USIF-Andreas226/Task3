@@ -299,6 +299,30 @@ class RAGRetriever:
         parts.append(f"المسارات المتاحة: {', '.join(sorted(available_tracks))}")
         parts.append("")
 
+        # Check if the query is asking about pricing generally
+        is_price_query = any(w in q for w in ["سعر", "أسعار", "اسعار", "بكام", "تكلفة", "كم كورس", "تقسيط", "أقساط", "اقساط", "price", "cost", "how much", "installment", "installments", "مبلغ", "فلوس", "رسوم", "fee", "fees"])
+        if is_price_query:
+            parts.append("## قائمة الأسعار الكاملة للدبلومات والمسارات (Full Price List)")
+            parts.append("### الدبلومات المباشرة (Live Diplomas):")
+            parts.append("- AI Diploma - Live: $950 (تقسيط: 4 دفعات بقيمة $237.50)")
+            parts.append("- Data Science Diploma - Live: $950 (تقسيط: 4 دفعات بقيمة $237.50)")
+            parts.append("- SOC Diploma - Live: $1050 (تقسيط: 4 دفعات بقيمة $262.50)")
+            parts.append("- Full-Stack Web Development Diploma - Live: $900 (تقسيط: 3 دفعات بقيمة $300)")
+            parts.append("- Penetration Testing Diploma - Live: $850 (تقسيط: 3 دفعات بقيمة $283.33)")
+            
+            parts.append("### المسارات المسجلة (Self-Paced Tracks):")
+            parts.append("- Data Science & Machine Learning Track: $250")
+            parts.append("- Data Analytics Track: $150")
+            parts.append("- Penetration Testing Track: $180")
+            parts.append("- SOC Analysis Track: $200")
+            parts.append("- Advanced Cybersecurity Track: $250")
+            parts.append("- SOC / Blue Team Track: $200")
+            parts.append("- Full-Stack Web Development Track: $250")
+            parts.append("- AI & Deep Learning Track: $250")
+            parts.append("- Full-Stack JavaScript Track: $200")
+            parts.append("- Python Full-Stack Track: $200")
+            parts.append("")
+
         # 1. Semantic search courses
         t0 = time.time()
         courses = self.kb.semantic_search_courses(query, top_k=5)
