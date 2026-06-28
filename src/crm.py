@@ -250,6 +250,17 @@ class CRMClient:
                 unique.append(t)
         return unique
 
+    def delete_all_tickets(self) -> int:
+        deleted = 0
+        if self._connected and self.collection is not None:
+            try:
+                result = self.collection.delete_many({})
+                deleted = result.deleted_count
+            except Exception:
+                pass
+        self._in_memory.clear()
+        return deleted
+
     def get_ticket(self, ticket_id: str) -> dict[str, Any] | None:
         for t in self.get_all_tickets():
             if t.get("ticket_id") == ticket_id:

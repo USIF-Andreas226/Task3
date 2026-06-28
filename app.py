@@ -269,13 +269,21 @@ if st.session_state.get("role") == "admin":
                 st.session_state.page = "trace"
                 st.rerun()
     st.divider()
-    if "whatsapp" in st.session_state:
-        if st.button("📱 Test WhatsApp Report Now", use_container_width=True):
-            try:
-                st.session_state.whatsapp.send_report()
-                st.success("✅ WhatsApp report sent!")
-            except Exception as e:
-                st.error(f"❌ Error: {e}")
+    col_test1, col_test2, col_test3 = st.columns([1, 2, 1])
+    with col_test2:
+        if "whatsapp" in st.session_state and st.session_state.whatsapp.client:
+            if st.button("📱 Test WhatsApp Report Now", use_container_width=True):
+                try:
+                    st.session_state.whatsapp.send_report()
+                    st.success("✅ WhatsApp report sent!")
+                except Exception as e:
+                    st.error(f"❌ Error: {e}")
+        else:
+            st.info("⚠️ WhatsApp not configured — add Twilio secrets to enable")
+        if st.button("🗑️ Clear All CRM Tickets", use_container_width=True, type="secondary"):
+            count = crm.delete_all_tickets()
+            st.success(f"✅ Deleted {count} tickets")
+            st.rerun()
 else:
     st.session_state.page = "chat"
     page = "chat"
