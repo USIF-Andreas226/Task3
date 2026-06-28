@@ -135,6 +135,15 @@ if "crm" not in st.session_state:
     st.session_state.crm = CRMClient()
 crm = st.session_state.crm
 
+# Initialize WhatsApp reporter with daily scheduler
+if "whatsapp" not in st.session_state:
+    try:
+        from src.whatsapp import WhatsAppReporter
+        st.session_state.whatsapp = WhatsAppReporter(crm)
+        st.session_state.whatsapp.start()
+    except Exception:
+        pass
+
 import re
 
 # Check global authentication
