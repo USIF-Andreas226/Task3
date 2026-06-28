@@ -277,7 +277,7 @@ if st.session_state.get("role") == "admin":
                 st.code(f"{k}={v}")
             if "whatsapp" in st.session_state:
                 r = st.session_state.whatsapp
-                st.write(f"client: {'✅' if r.client else '❌ None'}, from_: {r.from_}, numbers: {r.numbers}")
+                st.write(f"client: {'✅' if r.client else '❌ None'}, from_: {r.from_}, numbers: {r.numbers}, error: {getattr(r, '_init_error', 'none')}")
         if "whatsapp" in st.session_state and st.session_state.whatsapp.client:
             if st.button("📱 Test WhatsApp Report Now", use_container_width=True):
                 try:
@@ -285,6 +285,9 @@ if st.session_state.get("role") == "admin":
                     st.success("✅ WhatsApp report sent!")
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
+        elif "whatsapp" in st.session_state and not st.session_state.whatsapp.client:
+            err = getattr(st.session_state.whatsapp, '_init_error', 'unknown')
+            st.error(f"❌ Twilio init failed: {err}")
         else:
             st.info("⚠️ WhatsApp not configured — add Twilio secrets to enable")
         if st.button("🗑️ Clear All CRM Tickets", use_container_width=True, type="secondary"):

@@ -26,6 +26,7 @@ class WhatsAppReporter:
             ] if not v]
             logger.warning(f"Twilio credentials missing — WhatsApp disabled. Missing: {missing}")
             self.client = None
+            self._init_error = f"Missing env vars: {missing}"
             return
 
         try:
@@ -33,6 +34,7 @@ class WhatsAppReporter:
         except Exception as e:
             logger.error(f"Failed to initialize Twilio client: {e}")
             self.client = None
+            self._init_error = str(e)
 
     def _build_report(self) -> str:
         tickets = self.crm.get_all_tickets()
