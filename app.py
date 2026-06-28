@@ -271,6 +271,13 @@ if st.session_state.get("role") == "admin":
     st.divider()
     col_test1, col_test2, col_test3 = st.columns([1, 2, 1])
     with col_test2:
+        with st.expander("🔧 Debug: WhatsApp Env Vars", expanded=False):
+            for k in ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM", "SALES_NUMBER_1"]:
+                v = os.environ.get(k, "❌ MISSING")
+                st.code(f"{k}={v}")
+            if "whatsapp" in st.session_state:
+                r = st.session_state.whatsapp
+                st.write(f"client: {'✅' if r.client else '❌ None'}, from_: {r.from_}, numbers: {r.numbers}")
         if "whatsapp" in st.session_state and st.session_state.whatsapp.client:
             if st.button("📱 Test WhatsApp Report Now", use_container_width=True):
                 try:
