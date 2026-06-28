@@ -10,7 +10,9 @@ if env_local.exists():
     load_dotenv(dotenv_path=env_local)
 
 # Streamlit Cloud: inject secrets into environment for sub-modules (agent.py, crm.py)
-for _key in ["GROQ_API_KEY", "GROQ_MODEL", "MONGO_URI", "MONGO_DB", "MONGO_COLLECTION"]:
+for _key in ["GROQ_API_KEY", "GROQ_MODEL", "MONGO_URI", "MONGO_DB", "MONGO_COLLECTION",
+             "LOGIN_USERNAME", "LOGIN_PASSWORD",
+             "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM", "SALES_NUMBER_1"]:
     if _key not in os.environ:
         val = st.secrets.get(_key)
         if val:

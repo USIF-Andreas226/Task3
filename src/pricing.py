@@ -43,6 +43,17 @@ def calculate_llm_cost(model: str, input_tokens: int, output_tokens: int) -> flo
     """
     Calculates the LLM cost in USD.
     """
+    try:
+        from genai_prices import calc_price, Usage
+        model_ref = model.split("/")[-1] if "/" in model else model
+        price_calc = calc_price(
+            Usage(input_tokens=input_tokens, output_tokens=output_tokens),
+            model_ref
+        )
+        return float(price_calc.total_price)
+    except Exception:
+        pass
+
     rates = PRICING.get(model, PRICING["default"])
     in_cost = (input_tokens * rates["input"]) / 1_000_000
     out_cost = (output_tokens * rates["output"]) / 1_000_000
