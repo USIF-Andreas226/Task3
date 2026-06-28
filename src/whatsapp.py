@@ -18,7 +18,13 @@ class WhatsAppReporter:
         ] if n]
 
         if not all([sid, token, self.from_, self.numbers]):
-            logger.warning("Twilio credentials missing — WhatsApp disabled")
+            missing = [k for k, v in [
+                ("TWILIO_ACCOUNT_SID", sid),
+                ("TWILIO_AUTH_TOKEN", token),
+                ("TWILIO_FROM", self.from_),
+                ("SALES_NUMBER_1", os.environ.get("SALES_NUMBER_1")),
+            ] if not v]
+            logger.warning(f"Twilio credentials missing — WhatsApp disabled. Missing: {missing}")
             self.client = None
             return
 
