@@ -50,6 +50,7 @@ Thumbs.db
 
 # Streamlit
 .streamlit/config.toml
+.streamlit/secrets.toml
 
 # Python virtual environments
 venv/

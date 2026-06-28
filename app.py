@@ -141,8 +141,9 @@ if "whatsapp" not in st.session_state:
         from src.whatsapp import WhatsAppReporter
         st.session_state.whatsapp = WhatsAppReporter(crm)
         st.session_state.whatsapp.start()
-    except Exception:
-        pass
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to init WhatsApp reporter: {e}")
 
 import re
 

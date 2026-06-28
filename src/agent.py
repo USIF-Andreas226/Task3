@@ -938,7 +938,7 @@ Classification rules:
                                 from src.whatsapp import WhatsAppReporter
                                 WhatsAppReporter(self.crm).send_lead_alert(self.current_lead.model_dump())
                             except Exception as e:
-                                pass # Silently handle if Twilio isn't configured yet
+                                logger.warning(f"Failed to send WhatsApp lead alert: {e}")
                         
                         if not self.current_lead.assessment.lead_captured_shown:
                             self.current_lead.assessment.lead_captured_shown = True
