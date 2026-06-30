@@ -40,6 +40,9 @@ def show():
     st.caption(f"Usage logs for this user: {len(user_df)}")
 
     # Step 2: Select Conversation — get conversation IDs from messages (not just usage logs)
+    st.caption(f"Total usage logs before filter: {len(logs)} | After email filter: {len(user_df)}")
+    st.caption(f"DataFrame columns: {user_df.columns.tolist()}")
+
     user_id_for_msgs = None
     for u in users:
         if u["email"] == selected_user:
@@ -50,18 +53,25 @@ def show():
     # Debug: Show all values in user_df["conversation_id"]
     if "conversation_id" in user_df.columns:
         conv_id_series = user_df["conversation_id"]
+        st.caption(f"conversation_id column exists")
         st.caption(f"Total rows: {len(user_df)}")
         st.caption(f"conversation_id values BEFORE filter:\n{conv_id_series.tolist()}")
-        st.caption(f"Unique values: {conv_id_series.unique().tolist()}")
+        st.caption(f"Type of first 5 values: {[type(v) for v in conv_id_series.head().tolist()]}")
 
     conv_ids = []
     if user_id_for_msgs:
         conv_ids = crm.get_user_conversations(user_id_for_msgs)
-        st.caption(f"Conversations from messages: {conv_ids}")
+        st.caption(f"Conversations from messages: {len(conv_ids)} found")
+
     # Also add any conv_ids from usage logs that might not overlap
     if "conversation_id" in user_df.columns:
-        log_conv_ids = [cid for cid in user_df["conversation_id"].dropna().unique() if str(cid) != "nan"]
-        st.caption(f"Conversations from usage logs: {log_conv_ids}")
+        conv_id_series = user_df["conversation_id"]
+        valid_cids = []
+        for v in conv_id_series:
+            if pd.notna(v) and str(v) != "nan" and str(v).strip() != "":
+                valid_cids.append(v)
+        st.caption(f"Valid conversation_id values: {valid_cids}")
+        st.caption(f"Total valid conversation_ids: {len(valid_cids)}")
     conv_ids = [str(c) for c in conv_ids if c]
 
     if not conv_ids:
