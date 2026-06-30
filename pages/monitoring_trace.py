@@ -39,7 +39,7 @@ def show():
 
     # Step 2: Select Conversation
     conv_ids = sorted(list(user_df["conversation_id"].unique()))
-    conv_options = {cid: f"Conversation {cid[:8]}... (Count: {len(user_df[user_df['conversation_id'] == cid])})" for cid in conv_ids}
+    conv_options = {cid: f"Conversation {str(cid)[:8]}... (Count: {len(user_df[user_df['conversation_id'] == cid])})" for cid in conv_ids}
     selected_conv_id = st.selectbox(
         "2️⃣ Select Conversation | اختر المحادثة", 
         conv_ids, 
