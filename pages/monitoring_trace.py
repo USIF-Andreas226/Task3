@@ -37,9 +37,10 @@ def show():
     selected_user = st.selectbox("1️⃣ Select User Email | اختر العميل", all_users)
     user_df = df[df["email"] == selected_user]
 
-    # Step 2: Select Conversation
-    conv_ids = sorted(list(user_df["conversation_id"].unique()))
-    conv_options = {cid: f"Conversation {str(cid)[:8]}... (Count: {len(user_df[user_df['conversation_id'] == cid])})" for cid in conv_ids}
+    # Step 2: Select Conversation — ensure conversation_id is string, drop NaN
+    user_df["conversation_id"] = user_df["conversation_id"].astype(str)
+    conv_ids = sorted(cid for cid in user_df["conversation_id"].unique() if cid != "nan")
+    conv_options = {cid: f"Conversation {cid[:8]}... (Count: {len(user_df[user_df['conversation_id'] == cid])})" for cid in conv_ids}
     selected_conv_id = st.selectbox(
         "2️⃣ Select Conversation | اختر المحادثة", 
         conv_ids, 
