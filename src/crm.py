@@ -377,6 +377,25 @@ class CRMClient:
                 unique.append(m)
         return unique
 
+    def get_user_conversations(self, user_id: str) -> list[str]:
+        """Get all unique conversation IDs for a user from messages collection."""
+        conv_ids: set[str] = set()
+        if self._connected and self.messages_collection is not None:
+            try:
+                for doc in self.messages_collection.find(
+                    {"user_id": user_id},
+                    {"conversation_id": 1}
+                ):
+                    cid = doc.get("conversation_id")
+                    if cid:
+                        conv_ids.add(cid)
+            except Exception:
+                pass
+        for m in self._in_memory_messages:
+            if m.get("user_id") == user_id and m.get("conversation_id"):
+                conv_ids.add(m["conversation_id"])
+        return sorted(conv_ids)
+
     def get_all_usage_logs(self) -> list[dict[str, Any]]:
         logs = []
         if self._connected and self.usage_logs_collection is not None:

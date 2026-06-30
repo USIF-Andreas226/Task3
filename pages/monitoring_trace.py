@@ -39,21 +39,32 @@ def show():
     user_df = df[df["email"] == selected_user].copy()
     st.caption(f"Usage logs for this user: {len(user_df)}")
 
-    # Step 2: Select Conversation — ensure conversation_id is string, drop NaN
-    if "conversation_id" not in user_df.columns:
-        st.warning("No conversation_id field in logs for this user.")
-        st.write(f"Columns: {list(user_df.columns)}")
+    # Step 2: Select Conversation — get conversation IDs from messages (not just usage logs)
+    user_id_for_msgs = None
+    for u in users:
+        if u["email"] == selected_user:
+            user_id_for_msgs = u["user_id"]
+            break
+    conv_ids = []
+    if user_id_for_msgs:
+        conv_ids = crm.get_user_conversations(user_id_for_msgs)
+    # Also add any conv_ids from usage logs that might not overlap
+    if "conversation_id" in user_df.columns:
+        log_conv_ids = [cid for cid in user_df["conversation_id"].dropna().unique() if str(cid) != "nan"]
+        conv_ids = sorted(set(conv_ids) | set(log_conv_ids))
+    conv_ids = [str(c) for c in conv_ids if c]
+
+    if not conv_ids:
+        st.warning("No conversations found for this user.")
         st.stop()
-    user_df.loc[:, "conversation_id"] = user_df["conversation_id"].fillna("").apply(str)
-    conv_ids = sorted(cid for cid in user_df["conversation_id"].unique() if cid and cid != "nan" and cid != "")
-    conv_options = {cid: f"Conversation {cid[:8]}... (Count: {len(user_df[user_df['conversation_id'] == cid])})" for cid in conv_ids}
+    conv_options = {cid: f"Conversation {cid[:8]}... (Count: {len(user_df[user_df['conversation_id'] == cid]) if 'conversation_id' in user_df.columns else '?'})" for cid in conv_ids}
     selected_conv_id = st.selectbox(
         "2️⃣ Select Conversation | اختر المحادثة", 
         conv_ids, 
         format_func=lambda cid: conv_options.get(cid, cid)
     )
     
-    conv_df = user_df[user_df["conversation_id"] == selected_conv_id].sort_values(by="timestamp_dt")
+    conv_df = user_df[user_df["conversation_id"] == selected_conv_id].sort_values(by="timestamp_dt") if "conversation_id" in user_df.columns else pd.DataFrame()
 
     # Step 3: Select Message/Prompt
     # Fetch all user prompts. Let's find user messages for this conversation.
