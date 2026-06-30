@@ -42,8 +42,8 @@ def show():
         st.warning("No conversation_id field in logs for this user.")
         st.write(f"Columns: {list(user_df.columns)}")
         st.stop()
-    user_df.loc[:, "conversation_id"] = user_df["conversation_id"].astype(str)
-    conv_ids = sorted(cid for cid in user_df["conversation_id"].unique() if cid != "nan")
+    user_df.loc[:, "conversation_id"] = user_df["conversation_id"].fillna("").apply(str)
+    conv_ids = sorted(cid for cid in user_df["conversation_id"].unique() if cid and cid != "nan" and cid != "")
     conv_options = {cid: f"Conversation {cid[:8]}... (Count: {len(user_df[user_df['conversation_id'] == cid])})" for cid in conv_ids}
     selected_conv_id = st.selectbox(
         "2️⃣ Select Conversation | اختر المحادثة", 
