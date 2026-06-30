@@ -39,48 +39,45 @@ def show():
     user_df = df[df["email"] == selected_user].copy()
     st.caption(f"Usage logs for this user: {len(user_df)}")
 
-    # Step 2: Select Conversation — get conversation IDs from messages (not just usage logs)
-    st.caption(f"Total usage logs before filter: {len(logs)} | After email filter: {len(user_df)}")
-    st.caption(f"DataFrame columns: {user_df.columns.tolist()}")
-
+    # Step 2: Select Conversation — gather from both messages & usage logs
     user_id_for_msgs = None
     for u in users:
         if u["email"] == selected_user:
             user_id_for_msgs = u["user_id"]
             break
-    st.caption(f"Found user_id: {user_id_for_msgs}")
 
-    # Debug: Show all values in user_df["conversation_id"]
-    if "conversation_id" in user_df.columns:
-        conv_id_series = user_df["conversation_id"]
-        st.caption(f"conversation_id column exists")
-        st.caption(f"Total rows: {len(user_df)}")
-        st.caption(f"conversation_id values BEFORE filter:\n{conv_id_series.tolist()}")
-        st.caption(f"Type of first 5 values: {[type(v) for v in conv_id_series.head().tolist()]}")
-
-    conv_ids = []
+    conv_ids: set[str] = set()
+    # 1. Try MongoDB messages by user_id
     if user_id_for_msgs:
-        conv_ids = crm.get_user_conversations(user_id_for_msgs)
-        st.caption(f"Conversations from messages: {len(conv_ids)} found")
+        conv_ids.update(crm.get_user_conversations(user_id_for_msgs))
 
-    # Also add any conv_ids from usage logs that might not overlap
+    # 2. Always include conversation_ids present in usage logs (fallback / orphaned users)
     if "conversation_id" in user_df.columns:
-        conv_id_series = user_df["conversation_id"]
-        valid_cids = []
-        for v in conv_id_series:
-            if pd.notna(v) and str(v) != "nan" and str(v).strip() != "":
-                valid_cids.append(v)
-        st.caption(f"Valid conversation_id values: {valid_cids}")
-        st.caption(f"Total valid conversation_ids: {len(valid_cids)}")
-    conv_ids = [str(c) for c in conv_ids if c]
+        for v in user_df["conversation_id"]:
+            if pd.notna(v) and str(v).strip() and str(v).strip().lower() != "nan":
+                conv_ids.add(str(v).strip())
 
     if not conv_ids:
+        # Show a cleanup option for test/orphaned users
         st.warning("No conversations found for this user.")
+        if st.button("🗑️ Delete all usage logs for this user", key=f"del_{selected_user}"):
+            to_delete = user_df["log_id"].tolist()
+            removed = 0
+            for lid in to_delete:
+                if crm.delete_usage_log(lid):
+                    removed += 1
+            st.success(f"Deleted {removed} usage log(s). Refresh the page.")
+            st.stop()
         st.stop()
-    conv_options = {cid: f"Conversation {cid[:8]}... (Count: {len(user_df[user_df['conversation_id'] == cid]) if 'conversation_id' in user_df.columns else '?'})" for cid in conv_ids}
+
+    conv_ids = sorted(conv_ids)
+    conv_options = {
+        cid: f"Conversation {cid[:8]}... (Logs: {len(user_df[user_df['conversation_id'] == cid]) if 'conversation_id' in user_df.columns else '?'})"
+        for cid in conv_ids
+    }
     selected_conv_id = st.selectbox(
-        "2️⃣ Select Conversation | اختر المحادثة", 
-        conv_ids, 
+        "2️⃣ Select Conversation | اختر المحادثة",
+        conv_ids,
         format_func=lambda cid: conv_options.get(cid, cid)
     )
     

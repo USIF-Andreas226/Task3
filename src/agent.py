@@ -749,12 +749,6 @@ Classification rules:
         return re.sub(r"(?<!\w)\+?\d[\d\s\-\(\)]{3,13}(?!\w)", _replace, text).strip()
 
     def generate_response(self, user_input: str, user_id: str = "guest", conversation_id: str = "default") -> str:
-        # DEBUG first line to see what comes in
-        import logging
-        logger = logging.getLogger(__name__)
-        convo_id_repr = repr(conversation_id) if conversation_id is not None else "None"
-        logger.warning(f"DEBUG generate_response called with user_id={user_id}, conversation_id={convo_id_repr}, type={type(conversation_id)}")
-
         lang = self.detect_language(user_input)
         dialect = self.detect_dialect(user_input)
         intent = self.detect_intent(user_input)
@@ -789,11 +783,6 @@ Classification rules:
         # Strip invalid phone numbers from LLM-facing text
         clean_input = self.sanitize_input(user_input)
         self.conversation_history.append({"role": "user", "content": clean_input})
-
-        # Debug: log what we're about to save
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.debug(f"DEBUG save_message with user_id={user_id}, conversation_id={conversation_id}, type={type(conversation_id)}")
 
         # Save user message to database
         user_message_id = self.crm.save_message(user_id, conversation_id, "user", clean_input)
@@ -1213,19 +1202,16 @@ Classification rules:
             # Calculate cost
             llm_cost = calculate_llm_cost(attempt_model, prompt_tokens, completion_tokens)
 
-# Build think step summary
+            # Build think step summary
             think_step = (
-                f"🧠 Intent: {intent}\\n"
-                f"Signals: {buying_signals}\\n"
-                f"Dialect: {dialect}\\n"
-                f"Objections: {objections}\\n"
+                f"🧠 Intent: {intent}\n"
+                f"Signals: {buying_signals}\n"
+                f"Dialect: {dialect}\n"
+                f"Objections: {objections}\n"
                 f"Temperature: {temperature}"
             )
             if attempt_model != GROQ_MODEL:
-                think_step += f"\\\\nNote: Fell back from {GROQ_MODEL} to {attempt_model}"
-
-            # Debug: log what we're about to log
-            logger.debug(f"DEBUG usage_logger.log with user_id={user_id}, conversation_id={conversation_id}, message_id={user_message_id}")
+                think_step += f"\\nNote: Fell back from {GROQ_MODEL} to {attempt_model}"
 
             # Log to usage tracker
             self.usage_logger.log(

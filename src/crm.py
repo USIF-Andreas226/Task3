@@ -415,6 +415,23 @@ class CRMClient:
                 unique.append(l)
         return unique
 
+    def delete_usage_log(self, log_id: str) -> bool:
+        """Remove a single usage log by log_id from MongoDB and in-memory fallback."""
+        removed = False
+        if self._connected and self.usage_logs_collection is not None:
+            try:
+                result = self.usage_logs_collection.delete_one({"log_id": log_id})
+                if result.deleted_count > 0:
+                    removed = True
+            except Exception:
+                pass
+        # Also remove from in-memory list
+        new_list = [l for l in self._in_memory_usage_logs if l.get("log_id") != log_id]
+        if len(new_list) < len(self._in_memory_usage_logs):
+            removed = True
+            self._in_memory_usage_logs = new_list
+        return removed
+
     def close(self) -> None:
         if self.client:
             self.client.close()
