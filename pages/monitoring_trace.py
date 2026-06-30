@@ -38,8 +38,12 @@ def show():
     user_df = df[df["email"] == selected_user]
 
     # Step 2: Select Conversation — ensure conversation_id is string, drop NaN
-    user_df["conversation_id"] = user_df["conversation_id"].astype(str)
-    conv_ids = sorted(cid for cid in user_df["conversation_id"].unique() if cid != "nan")
+    try:
+        user_df["conversation_id"] = user_df["conversation_id"].astype(str)
+        conv_ids = sorted(cid for cid in user_df["conversation_id"].unique() if cid != "nan")
+    except Exception as e:
+        st.error(f"Debug - columns: {list(user_df.columns)}, error: {e}")
+        st.stop()
     conv_options = {cid: f"Conversation {cid[:8]}... (Count: {len(user_df[user_df['conversation_id'] == cid])})" for cid in conv_ids}
     selected_conv_id = st.selectbox(
         "2️⃣ Select Conversation | اختر المحادثة", 
