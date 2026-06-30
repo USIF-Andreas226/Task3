@@ -1213,16 +1213,16 @@ Classification rules:
             # Calculate cost
             llm_cost = calculate_llm_cost(attempt_model, prompt_tokens, completion_tokens)
 
-            # Build think step summary
+# Build think step summary
             think_step = (
-                f"🧠 Intent: {intent}\n"
-                f"Signals: {buying_signals}\n"
-                f"Dialect: {dialect}\n"
-                f"Objections: {objections}\n"
+                f"🧠 Intent: {intent}\\n"
+                f"Signals: {buying_signals}\\n"
+                f"Dialect: {dialect}\\n"
+                f"Objections: {objections}\\n"
                 f"Temperature: {temperature}"
             )
-if attempt_model != GROQ_MODEL:
-                think_step += f"\\nNote: Fell back from {GROQ_MODEL} to {attempt_model}"
+            if attempt_model != GROQ_MODEL:
+                think_step += f"\\\\nNote: Fell back from {GROQ_MODEL} to {attempt_model}"
 
             # Debug: log what we're about to log
             logger.debug(f"DEBUG usage_logger.log with user_id={user_id}, conversation_id={conversation_id}, message_id={user_message_id}")
