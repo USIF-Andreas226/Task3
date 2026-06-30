@@ -35,15 +35,15 @@ def show():
     # Step 1: Select User
     all_users = sorted(list(df["email"].unique()))
     selected_user = st.selectbox("1️⃣ Select User Email | اختر العميل", all_users)
-    user_df = df[df["email"] == selected_user]
+    user_df = df[df["email"] == selected_user].copy()
 
     # Step 2: Select Conversation — ensure conversation_id is string, drop NaN
-    try:
-        user_df["conversation_id"] = user_df["conversation_id"].astype(str)
-        conv_ids = sorted(cid for cid in user_df["conversation_id"].unique() if cid != "nan")
-    except Exception as e:
-        st.error(f"Debug - columns: {list(user_df.columns)}, error: {e}")
+    if "conversation_id" not in user_df.columns:
+        st.warning("No conversation_id field in logs for this user.")
+        st.write(f"Columns: {list(user_df.columns)}")
         st.stop()
+    user_df.loc[:, "conversation_id"] = user_df["conversation_id"].astype(str)
+    conv_ids = sorted(cid for cid in user_df["conversation_id"].unique() if cid != "nan")
     conv_options = {cid: f"Conversation {cid[:8]}... (Count: {len(user_df[user_df['conversation_id'] == cid])})" for cid in conv_ids}
     selected_conv_id = st.selectbox(
         "2️⃣ Select Conversation | اختر المحادثة", 
