@@ -34,8 +34,10 @@ def show():
 
     # Step 1: Select User
     all_users = sorted(list(df["email"].unique()))
+    st.markdown(f"**Total usage logs in DB:** {len(logs)} | **Unique users:** {len(all_users)}")
     selected_user = st.selectbox("1️⃣ Select User Email | اختر العميل", all_users)
     user_df = df[df["email"] == selected_user].copy()
+    st.caption(f"Usage logs for this user: {len(user_df)}")
 
     # Step 2: Select Conversation — ensure conversation_id is string, drop NaN
     if "conversation_id" not in user_df.columns:
