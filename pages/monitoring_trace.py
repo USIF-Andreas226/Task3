@@ -45,13 +45,15 @@ def show():
         if u["email"] == selected_user:
             user_id_for_msgs = u["user_id"]
             break
+    st.caption(f"Found user_id: {user_id_for_msgs}")
     conv_ids = []
     if user_id_for_msgs:
         conv_ids = crm.get_user_conversations(user_id_for_msgs)
+        st.caption(f"Conversations from messages: {conv_ids}")
     # Also add any conv_ids from usage logs that might not overlap
     if "conversation_id" in user_df.columns:
         log_conv_ids = [cid for cid in user_df["conversation_id"].dropna().unique() if str(cid) != "nan"]
-        conv_ids = sorted(set(conv_ids) | set(log_conv_ids))
+        st.caption(f"Conversations from usage logs: {log_conv_ids}")
     conv_ids = [str(c) for c in conv_ids if c]
 
     if not conv_ids:
