@@ -46,6 +46,14 @@ def show():
             user_id_for_msgs = u["user_id"]
             break
     st.caption(f"Found user_id: {user_id_for_msgs}")
+
+    # Debug: Show all values in user_df["conversation_id"]
+    if "conversation_id" in user_df.columns:
+        conv_id_series = user_df["conversation_id"]
+        st.caption(f"Total rows: {len(user_df)}")
+        st.caption(f"conversation_id values BEFORE filter:\n{conv_id_series.tolist()}")
+        st.caption(f"Unique values: {conv_id_series.unique().tolist()}")
+
     conv_ids = []
     if user_id_for_msgs:
         conv_ids = crm.get_user_conversations(user_id_for_msgs)
